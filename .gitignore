@@ -1,0 +1,7 @@
+*.swp
+*.orig
+*.swo
+*.pyc
+__pycache__/
+.ignore/
+.data/
