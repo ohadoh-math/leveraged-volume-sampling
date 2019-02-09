@@ -13,20 +13,6 @@
 % otherwise the function name is fetched).
 global script_file = [mfilename("fullpathext")];
 
-% should informational logs be printed?
-global show_info_traces = getenv("TRACE_INFO");
-
-function info_trace(msg, varargin)
-    % write a simple message to stderr.
-
-    global show_info_traces
-
-    if show_info_traces
-        msg = sprintf("info: [%s] %s\n", strftime('%a %b %d %H:%M:%S %Y',gmtime(time())), msg);
-        fprintf(stderr(), msg, varargin{:});
-    endif
-endfunction
-
 function [optimal_l2error, regression_time] = handle_dataset(dataset_file)
     % this function processes a single dataset file.
 
