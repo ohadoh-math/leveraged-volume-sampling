@@ -3,11 +3,16 @@
 %   * The least-squares optimal fitting solution (w).
 %   * The estimated values (Xw).
 %   * The least-squares error (|Xw - y|^2).
+%   * The time it took octave to solve the regression problem (time_delta)
 
-function [w, Xw, l2error] = linear_regression(X, y)
+function [w, Xw, l2error, time_delta] = linear_regression(X, y)
+    before = time();
     w = X \ y;
+    time_delta = time() - before;
+
     Xw = X*w;
     l2error = norm(Xw-y, 2)^2;
+
     return;
 endfunction
 
