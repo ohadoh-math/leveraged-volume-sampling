@@ -32,12 +32,12 @@ classdef LeverageScoresSampler < handle
             % admittedly, this may end up costing O(k^2) steps but that's better than holding a 433k-by-433k matrix.
 
             % get the number of uniquely polled indices
-            uniq_polled_rows = unique([polled_rows' polled_scores'], "rows")
+            uniq_polled_rows = unique([polled_rows' polled_scores'], "rows");
             % use hist() as a shortcut to getting the number of times each row was polled
-            poll_counts = hist(polled_rows, uniq_polled_rows(:,1))
+            poll_counts = hist(polled_rows, uniq_polled_rows(:,1));
 
             % now compound the polled indices, polled scores and repeatition count into a single matrix and sub-sample X
-            sub_sampling_info = [uniq_polled_rows poll_counts']
+            sub_sampling_info = [uniq_polled_rows poll_counts'];
             for i = 1:rows(sub_sampling_info)
                 sampled_row = sub_sampling_info(i,1);
                 sampled_score = sub_sampling_info(i,2);
