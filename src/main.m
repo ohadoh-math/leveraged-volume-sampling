@@ -78,7 +78,7 @@ function _main
         [s, e, te, matches, t, nm, sp] = regexp(dataset_file{1}, "([^/])+$");
         dataset_name = matches{1};
 
-        [optimal_l2error, regression_time] = handle_dataset(dataset_name, dataset_file{1}, 100, [30 40 50]);
+        [optimal_l2error, regression_time] = handle_dataset(dataset_name, dataset_file{1}, 100, [30 40 50 60 70]);
 
         printf ("%s\t%e\t%f\n", dataset_name, optimal_l2error, regression_time)
     endfor

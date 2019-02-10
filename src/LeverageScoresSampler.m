@@ -22,31 +22,10 @@ classdef LeverageScoresSampler < handle
         %          no validation of the input row indices or leverage scores is done.
         %          `polled_rows` and `polled_scores` are assumed to be row vectors.
         function [sX, sy]=sample(self, polled_rows, polled_scores)
-            sX = [];
-            sy = [];
+            rescaling_matrix = diag(1./sqrt(polled_scores));
 
-            % generating the sampling Q as specified in the paper, which is `n`-by-`n`, can take a lot of memory
-            % (more than i can spare on the laptop i'm using when it comes to the MSD dataset where `n` is about 433k).
-            % therefor we'll first see how many times each index in `polled_rows` is repeated and we'll sub-sample and
-            % rescale accordingly.
-            % admittedly, this may end up costing O(k^2) steps but that's better than holding a 433k-by-433k matrix.
-
-            % get the number of uniquely polled indices
-            uniq_polled_rows = unique([polled_rows' polled_scores'], "rows");
-            % use hist() as a shortcut to getting the number of times each row was polled
-            poll_counts = hist(polled_rows, uniq_polled_rows(:,1));
-
-            % now compound the polled indices, polled scores and repetition count into a single matrix and sub-sample X
-            sub_sampling_info = [uniq_polled_rows poll_counts'];
-            for i = 1:rows(sub_sampling_info)
-                sampled_row = sub_sampling_info(i,1);
-                sampled_score = sub_sampling_info(i,2);
-                count = sub_sampling_info(i, 3);
-
-                rescale = count*(1/sqrt(sampled_score));
-                sX(i,:) = rescale * self._X(sampled_row,:);
-                sy(i,:) = rescale * self._y(sampled_row,:);
-            endfor
+            sX = rescaling_matrix * self._X(polled_rows, :);
+            sy = rescaling_matrix * self._y(polled_rows, :);
         endfunction
 
     endmethods
@@ -90,7 +69,6 @@ endclassdef
 %
 %    1   3   5   1   3   5   1   4
 %
-% So `1` is repeated 3 times, `3` and `5` twice and `4` once.
 % And the polled leverage scores will be (arbitrarily chosen as the following):
 %
 % polled_indices/sum(polled_indices) =
@@ -108,15 +86,23 @@ endclassdef
 %!   % calculate the expected output first.
 %!   coefficients = 1./sqrt(polled_scores)
 %!
-%!  expected_sX = [X(1,:)*3*coefficients(1,1)
-%!                 X(3,:)*2*coefficients(1,2)
-%!                 X(4,:)*1*coefficients(1,end)
-%!                 X(5,:)*2*coefficients(1,3)]
+%!  expected_sX = [X(1,:)*coefficients(1,1)
+%!                 X(3,:)*coefficients(1,2)
+%!                 X(5,:)*coefficients(1,3)
+%!                 X(1,:)*coefficients(1,1)
+%!                 X(3,:)*coefficients(1,2)
+%!                 X(5,:)*coefficients(1,3)
+%!                 X(1,:)*coefficients(1,1)
+%!                 X(4,:)*coefficients(1,end)]
 %!
-%!  expected_sy = [y(1,:)*3*coefficients(1,1)
-%!                 y(3,:)*2*coefficients(1,2)
-%!                 y(4,:)*1*coefficients(1,end)
-%!                 y(5,:)*2*coefficients(1,3)]
+%!  expected_sy = [y(1,:)*coefficients(1,1)
+%!                 y(3,:)*coefficients(1,2)
+%!                 y(5,:)*coefficients(1,3)
+%!                 y(1,:)*coefficients(1,1)
+%!                 y(3,:)*coefficients(1,2)
+%!                 y(5,:)*coefficients(1,3)
+%!                 y(1,:)*coefficients(1,1)
+%!                 y(4,:)*coefficients(1,end)]
 %!
 %!   % now create the sampler and do the sampling.
 %!   sampler = LeverageScoresSampler(X, y);
