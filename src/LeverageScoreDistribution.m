@@ -6,6 +6,8 @@ classdef LeverageScoreDistribution < handle
         % a partitioning of [0,1] that we'll use to draw a random row
         % index with proportion to leverage scores.
         _partitioning = []
+        % the raw re-scaled leverage scores
+        _leverage_scores_pdf = []
         % number of members in the partitioning
         _n = 0
         % the sum of the leverage scores (i.e. number of columns)
@@ -25,13 +27,19 @@ classdef LeverageScoreDistribution < handle
             % calculate the leverage scores and use them to partition [0, 1], and add an artificial 0 in the beginning.
             % we use the fact that the leverage scores sum to the number of columns in X (assuming X is of full rank)
             % to rescale the partitioning.
-            self._partitioning = [0 cumsum(arrayfun(calc_leverage_score, 1:self._n))/self._d];
+            self._leverage_scores_pdf = arrayfun(calc_leverage_score, 1:self._n)/self._d
+            self._partitioning = [0 cumsum(self._leverage_scores_pdf)];
             % adjust for numerical errors. the leverage scores should sum to _d so this adjustment is miniscule.
-            self._partitioning(1,end) = 1;
+            self._partitioning(1, end) = 1;
         endfunction
 
-        % _poll - polls a single index from the rows of X with proportion to the leverage scores.
-        function index = _single_poll(self)
+        % leverage_scores - returns a copy of the calculated leverage scores distribution.
+        function scores = leverage_scores_distribution(self)
+            scores = self._leverage_scores_pdf;
+        endfunction
+
+        % _poll_index - polls a single index from the rows of X with proportion to the leverage scores.
+        function index = _poll_index(self)
             % first, draw a random number uniformly from (0, 1)
             r = rand();
 
@@ -65,8 +73,10 @@ classdef LeverageScoreDistribution < handle
         endfunction
 
         % poll - polls `k` indices i.i.d (i.e. with replacement) from the matrix rows with proprotion to the leverage scores.
-        function indices = poll(self, k)
-            indices = arrayfun(@(v) self._single_poll(), zeros(1, k));
+        %        returns the associated levarage scores as well as the indices.
+        function [indices, scores] = poll(self, k)
+            indices = arrayfun(@(v) self._poll_index(), zeros(1, k));
+            scores = arrayfun(@(i) self._leverage_scores_pdf(1, i), indices);
         endfunction
     endmethods
 endclassdef
@@ -101,7 +111,13 @@ endclassdef
 %!  leverage_score_distribution = diag(X*inv(X'*X)*X')/columns(X)
 %!
 %!  distribution = LeverageScoreDistribution(X);
-%!  polled_indices = distribution.poll(sample_size);
+%!
+%!  % assert that the calculated leverage scores are as expected.
+%!  % tolerate some numerical error.
+%!  calculated_leverage_scores_dist = distribution.leverage_scores_distribution()'
+%!  assert(norm(calculated_leverage_scores_dist - leverage_score_distribution) < 0.000001);
+%!
+%!  [polled_indices, polled_scores] = distribution.poll(sample_size);
 %!
 %!  % assert that polled_indices is a row vector:
 %!  assert(rows(polled_indices), 1);
@@ -113,6 +129,9 @@ endclassdef
 %!  % assert that the distribution of indices is roughly as expected.
 %!  % i'm going to be lenient and allow a 2% divergence in the norm.
 %!  polled_distribution = arrayfun(@(i) sum(polled_indices == i), 1:n)'/sample_size
-%!  assert(norm(polled_distribution - leverage_score_distribution) < 0.02)
-%
+%!  assert(norm(polled_distribution - leverage_score_distribution) < 0.02);
+%!
+%!  % assert that the returned scores vector is as expected
+%!  expected_polled_scores = arrayfun(@(i) calculated_leverage_scores_dist(i,1), polled_indices);
+%!  assert(expected_polled_scores, polled_scores);
 
