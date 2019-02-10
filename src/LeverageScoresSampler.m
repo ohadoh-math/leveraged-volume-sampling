@@ -36,7 +36,7 @@ classdef LeverageScoresSampler < handle
             % use hist() as a shortcut to getting the number of times each row was polled
             poll_counts = hist(polled_rows, uniq_polled_rows(:,1));
 
-            % now compound the polled indices, polled scores and repeatition count into a single matrix and sub-sample X
+            % now compound the polled indices, polled scores and repetition count into a single matrix and sub-sample X
             sub_sampling_info = [uniq_polled_rows poll_counts'];
             for i = 1:rows(sub_sampling_info)
                 sampled_row = sub_sampling_info(i,1);

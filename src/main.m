@@ -13,7 +13,9 @@
 % otherwise the function name is fetched).
 global script_file = [mfilename("fullpathext")];
 
-function [optimal_l2error, regression_time] = handle_dataset(dataset_file)
+function [optimal_l2error, regression_time, ...
+          lss_l2error, lss_l2error_std, lss_total_time ...
+          ] = handle_dataset(dataset_name, dataset_file, sampling_count, sample_sizes)
     % this function processes a single dataset file.
 
     % load the dataset into Octave.
@@ -34,6 +36,24 @@ function [optimal_l2error, regression_time] = handle_dataset(dataset_file)
     info_trace("\tfinished full regression in %.4f seconds. optimal error is %f.",
                regression_time,
                optimal_l2error);
+
+    % perform leverage score sampling (abbreviated "lss")
+    info_trace("performing %d repetitions of leverage score sampling for %d sample sizes...", sampling_count, columns(sample_sizes));
+    for sample_sz = sample_sizes
+        info_trace("\t%s: LSS(k=%i, times=%i)", dataset_name, sample_sz, sampling_count)
+        [sw, sXw, sl2error, sl2error_std, total_time] = naive_leverage_score_sampling(X, y, sample_sz, sampling_count);
+
+        lss_error = norm(sw - optimal_w, 2);
+        lss_error_p = 100*lss_error/norm(optimal_w, 2);
+        lss_estimation_error = norm(sXw - optimal_Xw, 2);
+        lss_estimation_error_p = 100*lss_estimation_error/norm(optimal_Xw, 2);
+
+        printf("%s: LSS(k=%i, times=%i): sl2error=%f[%f], error=%f(%.5f%%), estimation error=%f(%.5f%%), time=%i secs\n",
+               dataset_name, sample_sz, sampling_count,
+               sl2error, sl2error_std,
+               lss_error, lss_error_p, lss_estimation_error, lss_estimation_error_p,
+               floor(total_time));
+    end
 
 endfunction
 
@@ -58,7 +78,7 @@ function _main
         [s, e, te, matches, t, nm, sp] = regexp(dataset_file{1}, "([^/])+$");
         dataset_name = matches{1};
 
-        [optimal_l2error, regression_time] = handle_dataset(dataset_file{1});
+        [optimal_l2error, regression_time] = handle_dataset(dataset_name, dataset_file{1}, 100, [30 40 50]);
 
         printf ("%s\t%e\t%f\n", dataset_name, optimal_l2error, regression_time)
     endfor
