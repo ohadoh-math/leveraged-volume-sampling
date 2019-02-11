@@ -27,7 +27,7 @@ classdef LeverageScoreDistribution < handle
             % calculate the leverage scores and use them to partition [0, 1], and add an artificial 0 in the beginning.
             % we use the fact that the leverage scores sum to the number of columns in X (assuming X is of full rank)
             % to rescale the partitioning.
-            self._leverage_scores_pdf = arrayfun(calc_leverage_score, 1:self._n)/self._d
+            self._leverage_scores_pdf = arrayfun(calc_leverage_score, 1:self._n)/self._d;
             self._partitioning = [0 cumsum(self._leverage_scores_pdf)];
             % adjust for numerical errors. the leverage scores should sum to _d so this adjustment is miniscule.
             self._partitioning(1, end) = 1;
