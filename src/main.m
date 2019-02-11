@@ -68,9 +68,9 @@ function _main
 
     % sadly, that's the most convenient way i know to pass arguments to an Octave script.
     % there doesn't seem to be something like python's `argparse` or `getopts`.
-    sampling_count = str2double(getenv("SAMPLING_COUNT"))
+    sampling_count = str2double(getenv("SAMPLING_COUNT"));
     if isnan(sampling_count) || sampling_count <= 0
-        sampling_count = 100
+        sampling_count = 100;
     endif
 
     % handle each dataset separately

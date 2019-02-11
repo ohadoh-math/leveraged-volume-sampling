@@ -3,15 +3,14 @@
 
 classdef LeverageScoreDistribution < handle
     properties
-        % a partitioning of [0,1] that we'll use to draw a random row
-        % index with proportion to leverage scores.
-        _partitioning = []
         % the raw re-scaled leverage scores
         _leverage_scores_pdf = []
         % number of members in the partitioning
         _n = 0
         % the sum of the leverage scores (i.e. number of columns)
         _d = 0
+        % a multinomial distribution sampler
+        _sampler = []
     endproperties
 
     methods
@@ -24,13 +23,11 @@ classdef LeverageScoreDistribution < handle
             self._n = rows(X);
             self._d = columns(X);
 
-            % calculate the leverage scores and use them to partition [0, 1], and add an artificial 0 in the beginning.
-            % we use the fact that the leverage scores sum to the number of columns in X (assuming X is of full rank)
-            % to rescale the partitioning.
+            % calculate the scaled leverage scores.
             self._leverage_scores_pdf = arrayfun(calc_leverage_score, 1:self._n)/self._d;
-            self._partitioning = [0 cumsum(self._leverage_scores_pdf)];
-            % adjust for numerical errors. the leverage scores should sum to _d so this adjustment is miniscule.
-            self._partitioning(1, end) = 1;
+
+            % create a multinomial sampler based on the leverage scores
+            self._sampler = MultinomialDistribution(1:self._n, self._leverage_scores_pdf);
         endfunction
 
         % leverage_scores - returns a copy of the calculated leverage scores distribution.
@@ -38,44 +35,10 @@ classdef LeverageScoreDistribution < handle
             scores = self._leverage_scores_pdf;
         endfunction
 
-        % _poll_index - polls a single index from the rows of X with proportion to the leverage scores.
-        function index = _poll_index(self)
-            % first, draw a random number uniformly from (0, 1)
-            r = rand();
-
-            % now, use the interval where it lands with regards to self._partition to determine the index.
-            % since the number is uniformly drawn then:
-            %       P[index = i] =
-            %           P[_partitioning(1, i) <= r <= _partitioning(1, i+1)] =
-            %           measure((_partitioning(1, i), _partitioning(1, i+1))) =
-            %           _partitioning(1, i+1) - _partitioning(1, i) =
-            %           (the i'th leverage score)/_d.
-            %
-            % we'll use binary search to find where r landed.
-            upper_bound = self._n + 1; % the index for 1.00
-            lower_bound = 1;
-            index = floor((upper_bound + lower_bound)/2);
-
-            while upper_bound - lower_bound > 1
-                if self._partitioning(1, index) > r
-                    upper_bound = index;
-                    index = floor((upper_bound + lower_bound)/2);
-                elseif self._partitioning(1, index + 1) < r
-                    lower_bound = index + 1;
-                    index = floor((upper_bound + lower_bound)/2);
-                else
-                    return;
-                endif
-            endwhile
-
-            index = lower_bound;
-            return;
-        endfunction
-
         % poll - polls `k` indices i.i.d (i.e. with replacement) from the matrix rows with proprotion to the leverage scores.
         %        returns the associated levarage scores as well as the indices.
         function [indices, scores] = poll(self, k)
-            indices = arrayfun(@(v) self._poll_index(), zeros(1, k));
+            indices = self._sampler.poll(k);
             scores = arrayfun(@(i) self._leverage_scores_pdf(1, i), indices);
         endfunction
     endmethods
@@ -90,7 +53,7 @@ endclassdef
 %   2   3
 %   3  -1
 %   2   5
-% 
+%
 % And it's normalized associated leverage scores are:
 % diag(X*inv(X'*X)*X')/columns(X) =
 %
