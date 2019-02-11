@@ -72,13 +72,20 @@ function _main
         exit (0);
     endif
 
+    % sadly, that's the most convenient way i know to pass arguments to an Octave script.
+    % there doesn't seem to be something like python's `argparse` or `getopts`.
+    sampling_count = str2double(getenv("SAMPLING_COUNT"))
+    if isnan(sampling_count) || sampling_count <= 0
+        sampling_count = 100
+    endif
+
     % handle each dataset separately
     for dataset_file = datasets
         % extract just the file name from the data set file (that's the data set's name)
         [s, e, te, matches, t, nm, sp] = regexp(dataset_file{1}, "([^/])+$");
         dataset_name = matches{1};
 
-        [optimal_l2error, regression_time] = handle_dataset(dataset_name, dataset_file{1}, 100, [30 40 50 60 70]);
+        [optimal_l2error, regression_time] = handle_dataset(dataset_name, dataset_file{1}, sampling_count, [30 40 50 60 70]);
 
         printf ("%s\t%e\t%f\n", dataset_name, optimal_l2error, regression_time)
     endfor
