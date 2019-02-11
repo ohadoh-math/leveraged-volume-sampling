@@ -9,10 +9,12 @@
 %   * The standard deviation of the least-squares error (|sXw - y|^2).
 %   * The average time it took to calculate the leverage scores, sample the matrix and regress (time_delta).
 
-function [sw, sXw, sl2error, sl2error_std, total_time]=naive_leverage_score_sampling(X, y, k, times=1)
+function [sw, sXw, sl2error, sl2error_avg, sl2error_std, total_time]=naive_leverage_score_sampling(X, y, k, times=1)
+    n = rows(X);
     sw = zeros(columns(X), 1);
     sXw = zeros(rows(X), 1);
     sl2error = 0;
+    sl2error_avg = 0;
     sl2error_std = 0;
     total_time = 0;
 
@@ -39,17 +41,20 @@ function [sw, sXw, sl2error, sl2error_std, total_time]=naive_leverage_score_samp
 
         % calculate the actual estimation (_sXw and _sl2error are irrelevant as they represent a sub-sampled problem)
         _sXw = X*_sw;
-        _sl2error = norm(_sXw - y, 2)^2;
+        _sl2error = (norm(_sXw - y, 2)^2)/n;
 
         % add data to the statistics
-        sw += _sw/times;
-        sXw += _sXw/times;
+        sw += _sw;
         sl2errors(t,1) = _sl2error;
 
         total_time += time_delta + regression_time;
     endfor
 
-    sl2error = mean(sl2errors);
+    sw = sw/times;
+    sXw = X*sw;
+    sl2error = (norm(sXw - y, 2)^2)/n;
+
+    sl2error_avg = mean(sl2errors);
     sl2error_std = std(sl2errors);
 
 endfunction

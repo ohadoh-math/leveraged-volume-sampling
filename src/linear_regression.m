@@ -11,7 +11,7 @@ function [w, Xw, l2error, time_delta] = linear_regression(X, y)
     time_delta = time() - before;
 
     Xw = X*w;
-    l2error = norm(Xw-y, 2)^2;
+    l2error = (norm(Xw-y, 2)^2)/rows(X);
 
     return;
 endfunction

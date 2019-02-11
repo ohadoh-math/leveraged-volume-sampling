@@ -41,17 +41,11 @@ function [optimal_l2error, regression_time, ...
     info_trace("performing %d repetitions of leverage score sampling for %d sample sizes...", sampling_count, columns(sample_sizes));
     for sample_sz = sample_sizes
         info_trace("\t%s: LSS(k=%i, times=%i)", dataset_name, sample_sz, sampling_count)
-        [sw, sXw, sl2error, sl2error_std, total_time] = naive_leverage_score_sampling(X, y, sample_sz, sampling_count);
+        [sw, sXw, sl2error, sl2error_avg, sl2error_std, total_time] = naive_leverage_score_sampling(X, y, sample_sz, sampling_count);
 
-        lss_error = norm(sw - optimal_w, 2);
-        lss_error_p = 100*lss_error/norm(optimal_w, 2);
-        lss_estimation_error = norm(sXw - optimal_Xw, 2);
-        lss_estimation_error_p = 100*lss_estimation_error/norm(optimal_Xw, 2);
-
-        printf("%s: LSS(k=%i, times=%i): sl2error=%f[%f], error=%f(%.5f%%), estimation error=%f(%.5f%%), time=%i secs\n",
+        printf("%s: LSS(k=%i, times=%i): sl2error=%f, ol2error=%f, sl2error_avg=%f[%f], time=%i secs\n",
                dataset_name, sample_sz, sampling_count,
-               sl2error, sl2error_std,
-               lss_error, lss_error_p, lss_estimation_error, lss_estimation_error_p,
+               sl2error, optimal_l2error, sl2error_avg, sl2error_std,
                floor(total_time));
     end
 
