@@ -25,6 +25,7 @@ classdef LasVegasMultinomialDistribution < handle
             elseif columns(elements) != columns(probabilities)
                 error("`elements` and `probabilities` must agree in dimensions (%i vs %i).", columns(elements), columns(probabilities))
             elseif any(probabilities < 0) || (! any(probabilities > 0))
+                rejected_probabilities = probabilities
                 error("all probabilities must be non-negative and at least one must be positive.")
             endif
 

@@ -1,9 +1,10 @@
-% This class implements reverse iterative volume sampling of a matrix `X`.
-% The algorithm is taken from "Unbiased estimates for linear regression via volume sampling" (page 8).
-% Note that in the paper `X` is a wide matrix (d-by-n) and in this program it is n-by-d so we should
-% switch the terminology between `X` and `X'` in the paper.
+% This class implements volume sampling of a matrix `X` via the FastRegVol as suggested by
+% "Subsampling for Ridge Regression via Regularized Volume Sampling", though we're not going to
+% regularize the sampling in any way.
+% Note that as inReverseIterativeVolumeSampler.m, the paper's notation is that `X` is wide
+% and so we change the roles of `X` and `X'`.
 
-classdef ReverseIterativeVolumeSampler < handle
+classdef FastVolumeSampler < handle
 
     properties
         % the matrix to poll
@@ -16,58 +17,48 @@ classdef ReverseIterativeVolumeSampler < handle
         _Z = []
         % the number of lines to poll
         _s = 0
-        % the inital probabilities for polling
-        _initial_p = []
     endproperties
 
     methods
-        % constructor - do basic sanity checks and calculate `Z` and the inital sampling probabilities and.
-        function self = ReverseIterativeVolumeSampler(X, y, s)
+        % constructor - do basic sanity checks and calculate `Z` as it appears in the paper.
+        function self = FastVolumeSampler(X, y, s)
             if columns(X) > rows(X)
                 error ("X must be a long matrix (more rows than columns)")
-            elseif s < columns(X)
-                error ("volume sampling requires sampling at least the number of columns from a long matrix (s=%i < %i=columns)", s, columns(X))
+            elseif s < 2*columns(X)
+                error ("fast volume sampling requires sampling at least double the number of columns from a long matrix (s=%i < %i=columns)", s, columns(X))
             endif
-
+            
             self._X = X;
             self._y = y;
             self._s = s;
             self._n = rows(X);
 
-            % `Z` and the inital probabilities are given in a straight-forward manner in the algorithm
             self._Z = inv(X'*X);
-            self._initial_p = arrayfun(@(i) 1 - X(i,:)*self._Z*(X(i,:)'), 1:rows(X));
         endfunction
 
         % poll_rows - poll `s` rows from `X` with probability proportional to det(Xs'*Xs).
         function polled_rows = poll_rows(self)
             polled_rows = 1:self._n;
-
-            % recurringly remove rows from X
-            probabilities = self._initial_p;
             Z = self._Z;
 
+            % recurringly remove rows from X
             while columns(polled_rows) > self._s
-                % pick a row to remove
-                multinomial_sampler = MonteCarloMultinomialDistribution(1:columns(polled_rows), probabilities);
-                removed_row_index = multinomial_sampler.poll(1);
+                % pick a row uniformly and accept it with probability 1-X(i,:)*Z*X(i,:)'
+                s = columns(polled_rows);
+                index = 0;
+                h = 0;
+                row = [];
+                do
+                    index = randi(s);
+                    row = self._X(polled_rows(1, index), :);
+                    h = 1 - row*Z*(row');
+                until rand() < h
 
                 % remove the row and adjust the probabilities set
-                p = probabilities(1, removed_row_index);
-                removed_row = polled_rows(1, removed_row_index); % the row in X corresponding to the polled index
-
-                polled_rows(removed_row_index) = [];
-                probabilities(removed_row_index) = [];
-
-                x = self._X(removed_row,:)';
-                v = Z*x/sqrt(p);
-
-                for j=1:columns(probabilities)
-                    row_index = polled_rows(1, j);
-                    probabilities(1, j) -= (self._X(row_index, :) * v)^2;
-                endfor
-
-                Z += v*v';
+                polled_rows(index) = [];
+                
+                v = Z*(row');
+                Z += (v*(v'))/h;
             endwhile
         endfunction
 
@@ -81,12 +72,11 @@ classdef ReverseIterativeVolumeSampler < handle
 
 endclassdef
 
-% we'll test this class be sampling a hard coded matrix 1000 times and making sure the
-% probability distribution of the polled matrices roughly approximates their volumes.
+% this test is taken directly from ReverseIterativeVolumeSampler.m and only had
+% it's `s` and `n` adjusted for fast volume sampling as `s` needs to be at least 2*`columns(X)`.
 
 %!test
 %!  n = 8;
-%!  s = 3;
 %!  sampling_count = 50000;
 %!
 %!  % since this sampling requires a lot of tries (as there are many sub-matrices)
@@ -99,6 +89,7 @@ endclassdef
 %!
 %!  X = [ones(n, 1) (1:n)'];
 %!  y = (1337:(1337+n-1))'; % meaningless for this test
+%!  s = columns(X)*2 + 1;
 %!
 %!  % we'll generate all possible `s` line selections from `X` using nchoosek() and store them in a matrix.
 %!  sub_matrices = nchoosek(1:n, s);
@@ -121,10 +112,11 @@ endclassdef
 %!  expected_dist /= sum(expected_dist);
 %!
 %!  % now poll the bastard
-%!  sampler = ReverseIterativeVolumeSampler(X, y, s);
+%!  sampler = FastVolumeSampler(X, y, s);
 %!  polled_dist = zeros(1, rows(sub_matrices));
 %!
-%!  printf("sampled 0 (0%%) times...");
+%!  printf("sampled 0 (0%%) times (0 seconds)...");
+%!  begin = time();
 %!  fflush(stdout());
 %!  for i=1:sampling_count
 %!      sample = sampler.poll_rows();
@@ -132,7 +124,7 @@ endclassdef
 %!
 %!      % this takes some time so print the progress
 %!      if mod(i, 10) == 0
-%!          printf("\rsampled %i (%i%%) times...", i, floor((100*i)/sampling_count));
+%!          printf("\rsampled %i (%i%%) times (%i seconds)...", i, floor((100*i)/sampling_count), floor(time()-begin));
 %!          fflush(stdout());
 %!      endif
 %!  endfor
@@ -151,4 +143,3 @@ endclassdef
 %!  maximum_allowed_deviation = acceptable_loss_percent * norm(expected_dist, 1)
 %!  assert(difference_norm <= maximum_allowed_deviation);
 %!
-
