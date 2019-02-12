@@ -8,6 +8,8 @@ classdef ReverseIterativeVolumeSampler < handle
     properties
         % the matrix to poll
         _X = []
+        % the expected output vector
+        _y = []
         % the number of rows in _X
         _n = 0
         % the matrix specified as `Z` in the algorithm.
@@ -20,7 +22,7 @@ classdef ReverseIterativeVolumeSampler < handle
 
     methods
         % constructor - do basic sanity checks and calculate `Z` and the inital sampling probabilities and.
-        function self = ReverseIterativeVolumeSampler(X, s)
+        function self = ReverseIterativeVolumeSampler(X, y, s)
             if columns(X) > rows(X)
                 error ("X must be a long matrix (more rows than columns)")
             elseif s < columns(X)
@@ -28,6 +30,7 @@ classdef ReverseIterativeVolumeSampler < handle
             endif
 
             self._X = X;
+            self._y = y;
             self._s = s;
             self._n = rows(X);
 
@@ -69,8 +72,10 @@ classdef ReverseIterativeVolumeSampler < handle
         endfunction
 
         % sub_sample - sub-samples `s` lines from `X` with probability proportional to det(Xs'*Xs)
-        function sX = sub_sample(self)
-            sX = self._X(self.poll_rows(), :);
+        function [sX, sy] = sub_sample(self)
+            polled_rows = self.poll_rows();
+            sX = self._X(polled_rows, :);
+            sy = self._y(polled_rows, :);
         endfunction
     endmethods
 
