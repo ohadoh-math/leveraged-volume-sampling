@@ -49,7 +49,7 @@ classdef ReverseIterativeVolumeSampler < handle
 
             while columns(polled_rows) > self._s
                 % pick a row to remove
-                multinomial_sampler = MultinomialDistribution(1:columns(polled_rows), probabilities);
+                multinomial_sampler = MonteCarloMultinomialDistribution(1:columns(polled_rows), probabilities);
                 removed_row_index = multinomial_sampler.poll(1);
 
                 % remove the row and adjust the probabilities set

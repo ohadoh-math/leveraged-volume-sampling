@@ -1,7 +1,10 @@
 % This file defines a utility class that allows you to poll a given set
-% of numbers with specified probability for every number.
+% of numbers with specified probability for every number in a deterministic manner.
+% The pre-processing done in the constructor is O(n) as it calculates the CDF and
+% the polling is done in O(log(n)) so this is useful for when you need to poll multiple
+% times from the same distribution (as in leverage score sampling).
 
-classdef MultinomialDistribution < handle
+classdef LasVegasMultinomialDistribution < handle
 
     properties
         % the elements to poll.
@@ -14,7 +17,8 @@ classdef MultinomialDistribution < handle
 
     methods
         % constructor - perform basic sanity checks and rescale input probabilities and calculate CDF.
-        function self = MultinomialDistribution(elements, probabilities)
+        %               the preparations here are O(n) (calculate the CDF).
+        function self = LasVegasMultinomialDistribution(elements, probabilities)
             % make sure `elements` and `probabilities` are row vectors of the same length
             if rows(elements) != 1 || rows(probabilities) != 1
                 error("`elements` and `probabilities` must be row vectors.")
@@ -45,7 +49,8 @@ classdef MultinomialDistribution < handle
             self._cdf(1,end) = 1;
         endfunction
 
-        % _poll_single - poll a single element from the multinomial distribution
+        % _poll_single - poll a single element from the multinomial distribution.
+        %                polling is done in O(log(n)).
         function element = _poll_single(self)
             % first, draw a random number uniformly from (0, 1)
             r = rand();
@@ -95,20 +100,21 @@ endclassdef
 %!  elements = -(1:10);
 %!  probabilities = 1:10;
 %!  sample_size = 10000;
+%!  acceptable_error_percent = 0.03;
 %!
 %!  % calculate the expected distribution.
 %!  expected_dist = probabilities/sum(probabilities);
 %!
-%!  multinomial_dist = MultinomialDistribution(elements, probabilities);
+%!  multinomial_dist = LasVegasMultinomialDistribution(elements, probabilities);
 %!
 %!  % sample `sample_size` elements and calculate the distribution
 %!  polled_elements = multinomial_dist.poll(sample_size);
 %!  polled_dist = arrayfun(@(elem) sum(polled_elements == elem), elements)/sample_size;
 %!
 %!  % make sure the distributions differ in at most 3% of the expected distribution.
-%!  expected_vs_polled = [expected_dist' polled_dist'; norm(expected_dist, 2) norm(polled_dist, 2)]
+%!  expected_vs_polled = [expected_dist' polled_dist'; norm(expected_dist, 1) norm(polled_dist, 1)]
 %!  difference = expected_dist - polled_dist
-%!  difference_norm_percent = norm(difference, 2)/norm(expected_dist, 2)
-%!  assert(norm(polled_dist - expected_dist, 2) <= 0.03*norm(expected_dist, 2))
+%!  difference_norm_percent = norm(difference, 1)/norm(expected_dist, 1)
+%!  assert(norm(polled_dist - expected_dist, 1) <= acceptable_error_percent*norm(expected_dist, 1))
 
 

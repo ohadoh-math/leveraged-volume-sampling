@@ -27,7 +27,7 @@ classdef LeverageScoreDistribution < handle
             self._leverage_scores_pdf = arrayfun(calc_leverage_score, 1:self._n)/self._d;
 
             % create a multinomial sampler based on the leverage scores
-            self._sampler = MultinomialDistribution(1:self._n, self._leverage_scores_pdf);
+            self._sampler = LasVegasMultinomialDistribution(1:self._n, self._leverage_scores_pdf);
         endfunction
 
         % leverage_scores - returns a copy of the calculated leverage scores distribution.
