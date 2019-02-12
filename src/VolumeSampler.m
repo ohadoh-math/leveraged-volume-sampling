@@ -6,6 +6,10 @@
 classdef VolumeSampler < handle
 
     properties
+        % the matrix to sample
+        _X = []
+        % the expected output vector
+        _y = []
         % the fast volume sampler used for the first sampling
         _fast_sampler = []
         % the number of columns in X
@@ -26,22 +30,33 @@ classdef VolumeSampler < handle
 
             self._d = d;
             self._s = s;
+            self._X = X;
+            self._y = y;
             self._fast_sampler = FastVolumeSampler(X, y, max(2*d, s));
         endfunction
 
+        % poll_rows - sub-sample `s` row indices from `X` with probability proportional to det(Xs'*Xs)
+        function polled_rows = poll_rows(self)
+            polled_rows = self._fast_sampler.poll_rows();
+
+            if self._s < 2 * self._d
+                sampler = ReverseIterativeVolumeSampler(self._X(polled_rows,:), self._y(polled_rows,:), self._s);
+                second_polling_results = sampler.poll_rows();
+
+                polled_rows = arrayfun(@(i) polled_rows(1, i), second_polling_results);
+            endif
+        endfunction
+
         % sub_sample - sub-sample `s` lines from `X` with probability proportional to det(Xs'*Xs)
-        function sub_sample(self)
+        function [sX, sy] = sub_sample(self)
             % sometimes when polling numerical errors can cause negative probabilities to show
             % up in ReverseIterativeVolumeSampler and an error is raised so we'll just sub-sample
             % in a loop until a successful sampling is found.
 
-            [sX, sy] = self._fast_sampler.sub_sample();
+            polled_rows = self.poll_rows();
 
-            % if `s` is less than `2*d` further sampling is required
-            if self._s < 2*self._d
-                sampler = ReverseIterativeVolumeSampler(sX, sy, self._s);
-                [sX, sy] = sampler.sub_sample();
-            endif
+            sX = self._X(polled_rows, :);
+            sy = self._y(polled_rows, :);
         endfunction
     endmethods
 
@@ -88,7 +103,7 @@ endclassdef
 %!  expected_dist /= sum(expected_dist);
 %!
 %!  % now poll the bastard
-%!  sampler = FastVolumeSampler(X, y, s);
+%!  sampler = VolumeSampler(X, y, s);
 %!  polled_dist = zeros(1, rows(sub_matrices));
 %!
 %!  printf("sampled 0 (0%%) times (0 seconds)...");
@@ -158,7 +173,7 @@ endclassdef
 %!  expected_dist /= sum(expected_dist);
 %!
 %!  % now poll the bastard
-%!  sampler = ReverseIterativeVolumeSampler(X, y, s);
+%!  sampler = VolumeSampler(X, y, s);
 %!  polled_dist = zeros(1, rows(sub_matrices));
 %!
 %!  printf("sampled 0 (0%%) times (0 seconds)...");
