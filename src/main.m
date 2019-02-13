@@ -47,6 +47,12 @@ function [optimal_l2error, regression_time, ...
                dataset_name, sample_sz, sampling_count,
                sl2error, optimal_l2error, sl2error_avg, sl2error_std,
                floor(total_time));
+
+        info_trace("\t%s: VSS(s=%i, times=%i)", dataset_name, sample_sz, sampling_count);
+        [sw, sXw, sl2error, sl2error_avg, sl2error_std] = volume_sampling(X, y, sample_sz, sampling_count);
+        printf("%s: VSS(s=%i, times=%i): sl2error=%f, ol2error=%f, sl2error_avg=%f[%f]\n",
+               dataset_name, sample_sz, sampling_count,
+               sl2error, optimal_l2error, sl2error_avg, sl2error_std);
     end
 
 endfunction
