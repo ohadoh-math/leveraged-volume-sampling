@@ -39,19 +39,25 @@ function [optimal_l2error, regression_time, ...
 
     % perform leverage score sampling (abbreviated "lss")
     info_trace("performing %d repetitions of leverage score sampling for %d sample sizes...", sampling_count, columns(sample_sizes));
-    for sample_sz = sample_sizes
-        info_trace("\t%s: LSS(k=%i, times=%i)", dataset_name, sample_sz, sampling_count)
+    for sample_sz = [30] % sample_sizes
+        info_trace("\t%s: LSS(k=%i, times=%i, n=%i, d=%i)", dataset_name, sample_sz, sampling_count, rows(X), columns(X))
         [sw, sXw, sl2error, sl2error_avg, sl2error_std, total_time] = naive_leverage_score_sampling(X, y, sample_sz, sampling_count);
 
-        printf("%s: LSS(k=%i, times=%i): sl2error=%f, ol2error=%f, sl2error_avg=%f[%f], time=%i secs\n",
-               dataset_name, sample_sz, sampling_count,
+        printf("%s: LSS(k=%i, times=%i, n=%i, d=%i): sl2error=%f, ol2error=%f, sl2error_avg=%f[%f], time=%i secs\n",
+               dataset_name, sample_sz, sampling_count, rows(X), columns(X),
                sl2error, optimal_l2error, sl2error_avg, sl2error_std,
                floor(total_time));
 
-        info_trace("\t%s: VSS(s=%i, times=%i)", dataset_name, sample_sz, sampling_count);
+        info_trace("\t%s: VSS(s=%i, times=%i, n=%i, d=%i)", dataset_name, sample_sz, sampling_count, rows(X), columns(X));
         [sw, sXw, sl2error, sl2error_avg, sl2error_std] = volume_sampling(X, y, sample_sz, sampling_count);
-        printf("%s: VSS(s=%i, times=%i): sl2error=%f, ol2error=%f, sl2error_avg=%f[%f]\n",
-               dataset_name, sample_sz, sampling_count,
+        printf("%s: VSS(s=%i, times=%i, n=%i, d=%i): sl2error=%f, ol2error=%f, sl2error_avg=%f[%f]\n",
+               dataset_name, sample_sz, sampling_count, rows(X), columns(X),
+               sl2error, optimal_l2error, sl2error_avg, sl2error_std);
+
+        info_trace("\t%s: LVSS(k=%i, times=%i, n=%i, d=%i)", dataset_name, sample_sz, sampling_count, rows(X), columns(X));
+        [sw, sXw, sl2error, sl2error_avg, sl2error_std] = leveraged_volume_sampling(X, y, sample_sz, sampling_count);
+        printf("%s: LVSS(s=%i, times=%i, n=%i, d=%i): sl2error=%f, ol2error=%f, sl2error_avg=%f[%f]\n",
+               dataset_name, sample_sz, sampling_count, rows(X), columns(X),
                sl2error, optimal_l2error, sl2error_avg, sl2error_std);
     end
 

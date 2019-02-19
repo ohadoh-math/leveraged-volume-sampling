@@ -1,6 +1,7 @@
-% This function implements volume sampling regression.
-% It utilizes the functionality implemented in VolumeSampler.m and mainly manages the logic.
-% The function takes a matrix `X`, an expected output vector `y`, a sample size `k` and a number of times.
+% this function implements leveraged volume sampling regression.
+% it utilizes the functionality implemented in LeveragedVolumeSampler.m.
+% the function takes a matrix `X`, an expected output vector `y`, a sample size `k` and the number
+% of times the algorithm should be run and averaged.
 % The function then returns:
 %   * The solution to a volume sub-sampled problem, averaged after `times` times.
 %   * The estimator of the average solution.
@@ -8,9 +9,9 @@
 %   * The average l2 error for each of the `times` runs.
 %   * The standard deviation of the l2 error for each of the `times` runs.
 
-function [sw, sXw, sl2error, sl2error_avg, sl2error_std] = volume_sampling(X, y, k, times)
+function [sw, sXw, sl2error, sl2error_avg, sl2error_std] = leveraged_volume_sampling(X, y, k, times)
     n = rows(X);
-    sampler = VolumeSampler(X, y, k);
+    sampler = LeveragedVolumeSampler(X, y, k);
 
     sw = zeros(columns(X), 1);
     sXw = zeros(rows(X), 1);
@@ -21,13 +22,13 @@ function [sw, sXw, sl2error, sl2error_avg, sl2error_std] = volume_sampling(X, y,
     sl2errors = [];
 
     for t = 1:times
-        info_trace("VSS iteration #%i", t);
+        info_trace("LVSS iteration #%i", t);
 
         info_trace("\tsampling...");
         sampled_successfully = false;
         do
             try
-                [sX, sy] = sampler.sub_sample();
+                [_sX, _sy] = sampler.sub_sample();
                 sampled_successfully = true;
             catch err
                 fprintf(stderr(), "error while sub-sampling: %s\n", err.message)
@@ -35,7 +36,7 @@ function [sw, sXw, sl2error, sl2error_avg, sl2error_std] = volume_sampling(X, y,
         until sampled_successfully
 
         info_trace("\tregressing...");
-        _sw = linear_regression(sX, sy);
+        _sw = linear_regression(_sX, _sy);
 
         sw += _sw;
 
@@ -53,4 +54,3 @@ function [sw, sXw, sl2error, sl2error_avg, sl2error_std] = volume_sampling(X, y,
 
     info_trace("done!")
 endfunction
-
