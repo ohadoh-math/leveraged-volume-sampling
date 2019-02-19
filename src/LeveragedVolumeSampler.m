@@ -57,17 +57,8 @@ classdef LeveragedVolumeSampler < handle
 
         % poll_rows - sample `k` row incidices from X with probability proportional to rescaled volume.
         function [polled_rows, scores] = poll_rows(self)
-            % make sure we can perform leveraged volume samling.
-            % if s >= n there's no point in doing the rejection sampling.
-            if self._n <= self._s
-                polled_rows = self._default_volume_sampler.poll_rows();
-                scores = self._leverage_scores_distribution.leverage_scores_distribution()(polled_rows, :);
-                return;
-            endif
-
             % first, poll `s` rows according to volume sampling and accept them in proportion
             % to their volume change.
-
             do
                 [polled_rows, scores] = self._leverage_scores_distribution.poll(self._s);
 
@@ -91,7 +82,7 @@ classdef LeveragedVolumeSampler < handle
         % sub_sample - sample `k` rows from X with probability proportional to rescaled volume.
         function [sX, sy] = sub_sample(self)
             [polled_rows, scores] = self.poll_rows();
-            Q = 1./sqrt(diag(scores));
+            Q = diag(1./sqrt(scores));
             sX = Q*self._X(polled_rows, :);
             sy = Q*self._y(polled_rows, :);
         endfunction
@@ -114,8 +105,97 @@ endclassdef
 % finally, for 50M samples the error was 4.3% which is reasonable, but took (given no optimization)
 % more than 9 hours to run.
 % run these tests only if you have enough time, otherwise you'll not get to see the results.
+%
+% these are the following cases we test:
+%   k < 4*d^2
+%   k >= 4*d^2
+%   n < 4*d^2
+%
+% and finally we'll add a simple test that just calls sub_sample() and makes sure there's no
+% hidden technical bug there (no actual testing of the code).
 
-%! k < 4*d^2, d=1
+% n < 4*d^2, d=1
+%!test
+%!  n = 7;
+%!  sampling_count = 1000000;
+%!
+%!  acceptable_loss_percent = 0.07;
+%!
+%!  X = [ones(n, 1) (1:n)'];
+%!  y = (1337:(1337+n-1))'; % meaningless for this test
+%!  d = columns(X);
+%!  k = 2*d;
+%!  assert (d == 2 && n < 4*d^2); % make sure it's the test we want
+%!  assert (d <= k && k < n) % make sure this test is valid
+%!
+%!  % calculate the expected probability of every line combination.
+%!  % since n and d are small we can calculate all n^d submatrices and their expected distributions
+%!  inv_XtX = inv(X'*X);
+%!  leverage_scores_dist = arrayfun(@(i) X(i,:)*inv_XtX*(X(i,:)')/d, 1:rows(X));
+%!  leverage_scores_q = 1./sqrt(leverage_scores_dist);
+%!  volume = @(A) det(A'*A);
+%!  sub_leveraged_volume = @(rows) volume(diag(leverage_scores_q(1, rows))*X(rows,:)) * prod(leverage_scores_dist(1, rows));
+%!
+%!  expected_dist = zeros((n+1)^k, 1); % there are redundant spots in this vector
+%!  polled_dist = zeros((n+1)^k, 1); % there are redundant spots in this vector as well
+%!  index_cache_factor = (n+1).^(0:(k-1))';
+%!  get_sample_row = @(sample) sample * index_cache_factor;
+%!
+%!  % now go through all n^k sub-samples
+%!  sub_matrices = (1:n)';
+%!  for dimension=1:(k-1)
+%!      basic_block = sub_matrices;
+%!      size = rows(sub_matrices);
+%!
+%!      sub_matrices = [];
+%!      for i=1:n
+%!          sub_matrices = [sub_matrices; i*ones(size, 1) basic_block];
+%!      endfor
+%!  endfor
+%!
+%!  % and calculate the expected probability
+%!  for row_index=1:rows(sub_matrices)
+%!      row = sub_matrices(row_index, :);
+%!      dist_row_index = get_sample_row(row);
+%!      expected_dist(dist_row_index, 1) = sub_leveraged_volume(row);
+%!  endfor
+%!  expected_dist /= sum(expected_dist);
+%!
+%!  % now poll the bastard
+%!  sampler = LeveragedVolumeSampler(X, y, k);
+%!
+%!  printf("sampled 0 (0%%)/%i times (0 seconds)...", sampling_count);
+%!  begin = time();
+%!  fflush(stdout());
+%!  for i=1:sampling_count
+%!      sample = sampler.poll_rows();
+%!      sample_index = get_sample_row(sample);
+%!      polled_dist(sample_index, 1) += 1;
+%!
+%!      % this takes some time so print the progress
+%!      if mod(i, 10) == 0
+%!          printf("\rsampled %i/%i (%i%%) times (%i seconds)...", i, sampling_count, floor((100*i)/sampling_count), floor(time()-begin));
+%!          fflush(stdout());
+%!      endif
+%!  endfor
+%!
+%!  % finish with that progress statement
+%!  printf("\n");
+%!  printf("sampled %i matrices in %i seconds\n", sampling_count, floor(time() - begin));
+%!
+%!  % now normalize everything
+%!  polled_dist /= sum(polled_dist)
+%!
+%!  % l1 norm makes more sense to me when talking about distribution vectors.
+%!  expected_vs_polled = [expected_dist polled_dist]
+%!  polled_dist_norm1 = norm(polled_dist, 1)
+%!  expected_dist_norm1 = norm(expected_dist, 1)
+%!  difference_norm = norm(polled_dist - expected_dist, 1)
+%!  maximum_allowed_deviation = acceptable_loss_percent * norm(expected_dist, 1)
+%!  assert(difference_norm <= maximum_allowed_deviation);
+%!
+
+% k < 4*d^2, d=1
 %!test
 %!  n = 18;
 %!  sampling_count = 50000;
@@ -317,4 +397,22 @@ endclassdef
 %!  maximum_allowed_deviation = acceptable_loss_percent * norm(expected_dist, 1)
 %!  assert(difference_norm <= maximum_allowed_deviation);
 %!
+
+% test that sub_sample() just works
+%!test
+%!
+%!  n = 18;
+%!
+%!  acceptable_loss_percent = 0.07;
+%!
+%!  X = [ones(n, 1) (1:n)'];
+%!  y = (1337:(1337+n-1))'; % meaningless for this test
+%!  d = columns(X);
+%!  k = 4*d^2 + 1;
+%!  assert (k <= n);
+%!
+%!  sampler = LeveragedVolumeSampler(X, y, k);
+%!  [sX, sY] = sampler.sub_sample();
+%!  assert (rows(sX) == k);
+%!  assert (rows(sY) == k);
 
