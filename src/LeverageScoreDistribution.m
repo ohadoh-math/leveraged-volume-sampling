@@ -3,6 +3,10 @@
 
 classdef LeverageScoreDistribution < handle
     properties
+        % the matrix to sub-sample
+        _X = []
+        % the labels vector to sub-sample
+        _y = []
         % the raw re-scaled leverage scores
         _leverage_scores_pdf = []
         % number of members in the partitioning
@@ -16,7 +20,10 @@ classdef LeverageScoreDistribution < handle
     methods
         % constructor - calculate the leverage scores and set the partitioning.
         %               assume X to be of full column rank.
-        function self = LeverageScoreDistribution(X)
+        function self = LeverageScoreDistribution(X, y)
+            self._X = X;
+            self._y = y;
+
             inv_XtX = inv(X' * X);
             calc_leverage_score = @(i) X(i,:) * inv_XtX * X(i,:)';
 
@@ -40,6 +47,18 @@ classdef LeverageScoreDistribution < handle
         function [indices, scores] = poll(self, k)
             indices = self._sampler.poll(k);
             scores = arrayfun(@(i) self._leverage_scores_pdf(1, i), indices);
+        endfunction
+
+        % sub_sample - sample the rows of X and y according to a given list of indices and rescale accordingly.
+        %              no validation of the input row indices or leverage scores is done.
+        %              `polled_rows` and `polled_scores` are assumed to be row vectors.
+        function [sX, sy] = sub_sample(self, k)
+            [polled_rows, polled_scores] = self.poll(k);
+
+            rescaling_matrix = diag(1./sqrt(polled_scores));
+
+            sX = rescaling_matrix * self._X(polled_rows, :);
+            sy = rescaling_matrix * self._y(polled_rows, :);
         endfunction
     endmethods
 endclassdef
@@ -66,6 +85,7 @@ endclassdef
 %!test
 %!  sample_size = 10000;
 %!  X = [1 4; 2 3; 3 -1; 2 5];
+%!  y = ones(rows(X), 1); % no real use
 %!
 %!  % make sure the test matrix is of full rank
 %!  assert(rank(X), columns(X));
@@ -73,7 +93,7 @@ endclassdef
 %!  n = rows(X);
 %!  leverage_score_distribution = diag(X*inv(X'*X)*X')/columns(X)
 %!
-%!  distribution = LeverageScoreDistribution(X);
+%!  distribution = LeverageScoreDistribution(X, y);
 %!
 %!  % assert that the calculated leverage scores are as expected.
 %!  % tolerate some numerical error.

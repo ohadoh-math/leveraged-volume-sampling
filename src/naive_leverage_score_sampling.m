@@ -9,34 +9,22 @@
 %   * The standard deviation of the least-squares error (|sXw - y|^2).
 %   * The average time it took to calculate the leverage scores, sample the matrix and regress (time_delta).
 
-function [sw, sXw, sl2error, sl2error_avg, sl2error_std, total_time]=naive_leverage_score_sampling(X, y, k, times=1)
+function [sw, sXw, sl2error, sl2error_avg, sl2error_std]=naive_leverage_score_sampling(X, y, k, times=1)
     n = rows(X);
     sw = zeros(columns(X), 1);
     sXw = zeros(rows(X), 1);
     sl2error = 0;
     sl2error_avg = 0;
     sl2error_std = 0;
-    total_time = 0;
 
     sl2errors = [];
-
-    before = time();
-
-    row_sampler = LeverageScoreDistribution(X);
-    sub_sampler = LeverageScoresSampler(X, y);
-
-    total_time += time() - before;
+    leverage_score_sampler = LeverageScoreDistribution(X, y);
 
     for t=1:times
-        before = time();
-
         % sample a subset of the rows via leverage score sampling
-        [polled_indices, polled_scores] = row_sampler.poll(k);
-        [sX, sy] = sub_sampler.sample(polled_indices, polled_scores);
+        [sX, sy] = leverage_score_sampler.sub_sample(k);
 
-        time_delta = time() - before;
-
-        % finally, regress!
+        % regress
         [_sw, _sXw, _sl2error, regression_time] = linear_regression(sX, sy);
 
         % calculate the actual estimation (_sXw and _sl2error are irrelevant as they represent a sub-sampled problem)
@@ -46,8 +34,6 @@ function [sw, sXw, sl2error, sl2error_avg, sl2error_std, total_time]=naive_lever
         % add data to the statistics
         sw += _sw;
         sl2errors(t,1) = _sl2error;
-
-        total_time += time_delta + regression_time;
     endfor
 
     sw = sw/times;

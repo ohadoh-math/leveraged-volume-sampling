@@ -54,12 +54,11 @@ function [optimal_l2error, regression_time, ...
     info_trace ("proceeding to sample via LSS, VSS and LVSS for %i tries each", sampling_count)
     for sample_sz = sample_sizes
         info_trace("\t%s: LSS(k=%i, times=%i, n=%i, d=%i)", dataset_name, sample_sz, sampling_count, rows(X), columns(X))
-        [sw, sXw, sl2error, sl2error_avg, sl2error_std, total_time] = naive_leverage_score_sampling(X, y, sample_sz, sampling_count);
+        [sw, sXw, sl2error, sl2error_avg, sl2error_std] = naive_leverage_score_sampling(X, y, sample_sz, sampling_count);
 
-        info_trace("%s: LSS(k=%i, times=%i, n=%i, d=%i): sl2error=%f, ol2error=%f, sl2error_avg=%f[%f], time=%i secs\n",
+        info_trace("%s: LSS(k=%i, times=%i, n=%i, d=%i): sl2error=%f, ol2error=%f, sl2error_avg=%f[%f]\n",
                    dataset_name, sample_sz, sampling_count, rows(X), columns(X),
-                   sl2error, optimal_l2error, sl2error_avg, sl2error_std,
-                   floor(total_time));
+                   sl2error, optimal_l2error, sl2error_avg, sl2error_std);
         lss_sl2errors = [lss_sl2errors sl2error];
         lss_sl2errors_avg = [lss_sl2errors sl2error_avg];
         lss_sl2errors_std = [lss_sl2errors sl2error_std];

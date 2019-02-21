@@ -45,7 +45,7 @@ classdef LeveragedVolumeSampler < handle
             self._s = max(k, 4*(d^2));
             self._total_volume = det(X'*X);
 
-            self._leverage_scores_distribution = LeverageScoreDistribution(X);
+            self._leverage_scores_distribution = LeverageScoreDistribution(X, y);
             self._leverage_scores_sampler = LeverageScoresSampler(X, y);
 
             if self._s >= self._n
