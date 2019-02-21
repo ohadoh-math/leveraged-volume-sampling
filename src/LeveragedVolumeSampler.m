@@ -10,7 +10,6 @@ classdef LeveragedVolumeSampler < handle
         _y = []
         % the fast volume sampler used for the first sampling
         _leverage_scores_distribution = []
-        _leverage_scores_sampler = []
         % a volume sampler for the case where n < 4*d^2
         _default_volume_sampler = []
         % the number of columns of X
@@ -46,7 +45,6 @@ classdef LeveragedVolumeSampler < handle
             self._total_volume = det(X'*X);
 
             self._leverage_scores_distribution = LeverageScoreDistribution(X, y);
-            self._leverage_scores_sampler = LeverageScoresSampler(X, y);
 
             if self._s >= self._n
                 % diag returns a sparse matrix so we're fine with a large `n`
