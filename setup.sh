@@ -9,9 +9,9 @@ set -eu
 readonly PROJECT_BASE=$(dirname $(readlink -f "${BASH_SOURCE[0]}"))
 readonly SCRIPT=$(basename "${BASH_SOURCE[0]}")
 
-readonly DEFAULT_DATASETS_FILE="${PROJECT_BASE}/datasets"
-readonly DEFAULT_DATASETS_DIR="${PROJECT_BASE}/.data/"
-readonly DEFAULT_DATASETS_CACHE="${PROJECT_BASE}/.datasets-cache"
+readonly DEFAULT_DATASETS_FILE="${PROJECT_BASE}/datasets-config"
+readonly DEFAULT_DATASETS_DIR="${PROJECT_BASE}/downloaded-datasets/"
+readonly DEFAULT_DATASETS_CACHE="${PROJECT_BASE}/datasets-cache"
 
 readonly CACHE_FIELD_SEPARATOR="$(echo -ne '\t')"
 
@@ -86,7 +86,7 @@ mkdir -p "${datasets_dir}"
 touch "${datasets_cache}"
 
 # download datasets
-sed 's,/+,/,g' "${datasets_list}" | while read dataset_url
+sed 's,/+,/,g; /^#/ d' "${datasets_list}" | while read dataset_url
 do
     # extract file name from URL by treating it as a UNIX path
     dataset_file=$(readlink -f "${datasets_dir}/"$(basename "${dataset_url}"))

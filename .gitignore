@@ -6,4 +6,6 @@ __pycache__/
 .ignore/
 .data/
 .datasets-cache
+datasets-cache
+downloaded-datasets/
 sed*
