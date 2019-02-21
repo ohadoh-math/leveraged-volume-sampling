@@ -54,7 +54,7 @@ function [optimal_l2error, regression_time, ...
     info_trace ("proceeding to sample via LSS, VSS and LVSS for %i tries each", sampling_count)
     for sample_sz = sample_sizes
         info_trace("\t%s: LSS(k=%i, times=%i, n=%i, d=%i)", dataset_name, sample_sz, sampling_count, rows(X), columns(X))
-        [sw, sXw, sl2error, sl2error_avg, sl2error_std] = naive_leverage_score_sampling(X, y, sample_sz, sampling_count);
+        [sw, sXw, sl2error, sl2error_avg, sl2error_std] = leverage_score_sampling(X, y, sample_sz, sampling_count);
 
         info_trace("%s: LSS(k=%i, times=%i, n=%i, d=%i): sl2error=%f, ol2error=%f, sl2error_avg=%f[%f]\n",
                    dataset_name, sample_sz, sampling_count, rows(X), columns(X),

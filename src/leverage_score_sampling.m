@@ -1,5 +1,4 @@
-% This file naively implements leverage score sampling.
-% That is, i'll implement leverage score sampling without optimizing as i understand the procedure.
+% This file implements leverage score sampling.
 % The function accepts a feature matrix `X`, expected values `y` and sample size `k`.
 % The function also accepts the number of times to repeat the process with the argument `times`.
 % Returns the following:
@@ -7,9 +6,8 @@
 %   * The averaged estimated values (sXw=X*sw).
 %   * The averaged least-squares error (|sXw - y|^2).
 %   * The standard deviation of the least-squares error (|sXw - y|^2).
-%   * The average time it took to calculate the leverage scores, sample the matrix and regress (time_delta).
 
-function [sw, sXw, sl2error, sl2error_avg, sl2error_std]=naive_leverage_score_sampling(X, y, k, times=1)
+function [sw, sXw, sl2error, sl2error_avg, sl2error_std]=leverage_score_sampling(X, y, k, times=1)
     n = rows(X);
     sw = zeros(columns(X), 1);
     sXw = zeros(rows(X), 1);
