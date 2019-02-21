@@ -15,6 +15,7 @@ readonly DEFAULT_DATASETS_CACHE="${PROJECT_BASE}/datasets-cache"
 
 readonly CACHE_FIELD_SEPARATOR="$(echo -ne '\t')"
 
+# Logging utilities
 function perror()
 {
     echo "${SCRIPT}: error: ${@}" >&2
@@ -38,6 +39,127 @@ function error_trace()
     trace "${ERROR_PREFIX}: ${@}"
 }
 
+# Cache utilities
+
+function print_dataset_config()
+{
+    _cache_file="${1}"
+    sed -r '
+        # drop comments
+        /^\s*#/ d
+
+        # drop empty lines
+        /^\s*$/ d
+    ' "${_cache_file}"
+}
+
+# check if dataset is listed and valid
+function is_dataset_cached()
+{
+    local _cache_file="${1}"
+    local _dataset_url="${2}"
+
+    # check if the dataset url is in the cache.
+    if ! print_dataset_config "${_cache_file}" | grep -qF "${_dataset_url}"
+    then
+        # it isn't
+        return 1
+    fi
+
+    # read the cached file path and hash from the cache
+    IFS="${CACHE_FIELD_SEPARATOR}" read _cached_url _cached_path _cached_hash _sampling_count < <(print_dataset_config "${_cache_file}" | grep -F "${_dataset_url}" | head -1)
+
+    # if the file doesn't exist remove the cache line and fail
+    if ! [ -f "${_cached_path}" ]
+    then
+        sed -i "/${_cached_hash}/ d" "${_cache_file}"
+        return 1
+    fi
+
+    # if the hash doesn't match, do the same
+    local _calculated_hash=$(sha1sum "${_cached_path}" | cut -d' ' -f1)
+    if [ "${_cached_hash}" != "${_calculated_hash}" ]
+    then
+        sed -i "/${_cached_hash}/ d" "${_cache_file}"
+        return 1
+    fi
+
+    # file is in cache
+    return 0
+}
+
+# add an entry to the cache file
+function write_cache_line()
+{
+    local _cache_file="${1}"
+    local _dataset_url="${2}"
+    local _file="${3}"
+    local _hash="${4}"
+    local _sampling_count="${5}"
+
+    echo "${_dataset_url}${CACHE_FIELD_SEPARATOR}${_file}${CACHE_FIELD_SEPARATOR}${_hash}${CACHE_FIELD_SEPARATOR}${_sampling_count}" >> ${_cache_file}
+}
+
+# copy a cached file to the output directory and update the cache with the correct path
+function update_cached_file()
+{
+    local _cache_file="${1}"
+    local _dataset_url="${2}"
+    local _output_directory="${3}"
+
+    local _output_file="${_output_directory}/"$(basename "${_dataset_url}" | awk -F/ '{print $NF}' | sed -r 's/\.[^.]+$//g')
+    _output_file=$(readlink -f "${_output_file}")
+
+    # read the cached file path and hash from the cache
+    IFS="${CACHE_FIELD_SEPARATOR}" read _cached_url _cached_path _cached_hash _sampling_count < <(print_dataset_config "${_cache_file}" | grep -F "${_dataset_url}" | head -1)
+    cached_path=$(readlink -f "${_cached_path}")
+
+    # check if the output file is the cached file
+    if [ "${_cached_path}" == "${_output_file}" ]
+    then
+        # nothing to do
+        return 0
+    fi
+
+    cp "${_cached_file}" "${_output_file}"
+
+    write_cache_line "${_cache_file}" "${_dataset_url}" "${_output_file}" "${_cached_hash}" "${_sampling_count}"
+}
+
+# download a dataset file
+function fetch_dataset()
+{
+    local _cache_file="${1}"
+    local _dataset_url="${2}"
+    local _output_directory="${3}"
+    local _sampling_count="${4}"
+
+    local _output_file="${_output_directory}/"$(basename "${_dataset_url}" | awk -F/ '{print $NF}')
+    _output_file=$(readlink -f "${_output_file}")
+
+    # try at 3 times because some-times there's a connectivity error
+    curl -o "${_output_file}" "${_dataset_url}" || \
+    curl -o "${_output_file}" "${_dataset_url}" || \
+    curl -o "${_output_file}" "${_dataset_url}"
+
+    # if the output file is compressed with bzip2 then decompress it
+    if echo "${_output_file}" | grep -qP '\.bz2$'
+    then
+        local _compressed_file="${_output_file}"
+        _output_file=$(echo "${_output_file}" | sed -r 's/\.bz2$//')
+        rm -f "${_output_file}"
+        bzip2 -d "${_compressed_file}"
+    fi
+
+    # now remove the 'column:' notation in the dataset
+    sed -i -r 's/[0-9]+://g' "${_output_file}"
+
+    # and add the file to the cache
+    _hash=$(sha1sum "${_output_file}" | cut -d' ' -f1)
+    write_cache_line "${_cache_file}" "${_dataset_url}" "${_output_file}" "${_hash}" "${_sampling_count}"
+}
+
+# Main
 function help()
 {
     echo "
@@ -85,128 +207,20 @@ done
 mkdir -p "${datasets_dir}"
 touch "${datasets_cache}"
 
-# download datasets
-sed 's,/+,/,g; /^#/ d' "${datasets_list}" | while read dataset_url
+# download the datasets
+print_dataset_config "${datasets_list}" | while read dataset_url sampling_count
 do
-    # extract file name from URL by treating it as a UNIX path
-    dataset_file=$(readlink -f "${datasets_dir}/"$(basename "${dataset_url}"))
-    decompressed_dataset_file=$(echo "${dataset_file}" | sed -r 's/\.bz2$//gi')
-    info_trace "fetching ${dataset_url} to ${dataset_file}..."
-
-    # first, consult the cache file to see if we've already downloaded the file
-    already_downloaded_dataset=false
-    downloaded_dataset_file=""
-    downloaded_dataset_hash=""
-
-    info_trace "    consulting cache file ${datasets_cache}..."
-    if grep -qF "${dataset_url}" "${datasets_cache}"
+    info_trace "checking dataset: ${dataset_url}..."
+    if is_dataset_cached "${datasets_cache}" "${dataset_url}"
     then
-        # there's a relevant entry in the downloaded datasets cache!
-        # check if the cached file exists and is consistent with the cached hash.
-        IFS="${CACHE_FIELD_SEPARATOR}" read _ cached_file cached_hash < <(grep -F "${dataset_url}" "${datasets_cache}" | head -1)
-        if [ -f "${cached_file}" ]
-        then
-            info_trace "        found a cache entry for ${dataset_url} - ${cached_file}"
-            real_hash=$(sha1sum "${cached_file}" | cut -d' ' -f1)
-
-            # compare actual hash with cached hash
-            if [ "${real_hash}" == "${cached_hash}" ]
-            then
-                # the cached file is consistent
-                info_trace "        cached file ${cached_file} is valid"
-                already_downloaded_dataset=true
-                downloaded_dataset_file="${cached_file}"
-                downloaded_dataset_hash="${cached_hash}"
-            else
-                # the cached file is corrupt
-                info_trace "        cached file ${cached_file} is invalid - removing it from cache."
-                sed -i "/${cached_hash}/ d" "${datasets_cache}"
-            fi
-        else
-            # the cached file doesn't exist
-            info_trace "        cached file ${cached_file} doesn't exist - removing it from cache."
-            sed -i "/${cached_hash}/ d" "${datasets_cache}"
-        fi
+        info_trace "    dataset already exists in cache!"
+        update_cached_file "${datasets_cache}" "${dataset_url}" "${datasets_dir}"
     else
-        # the dataset doesn't appear in the cache
-        info_trace "        ${dataset_url} not found in cache"
+        info_trace "    downloading the dataset..."
+        fetch_dataset "${datasets_cache}" "${dataset_url}" "${datasets_dir}" "${sampling_count}"
+        info_trace "    downloaded ${dataset_url}"
     fi
-
-    # if the dataset was already downloaded (though it might not be in the requested output directory) then use it
-    if ${already_downloaded_dataset}
-    then
-        info_trace "    using downloaded file ${downloaded_dataset_file}"
-
-        # check if the expected output file exists.
-        if [ -f "${decompressed_dataset_file}" ]
-        then
-            # the expected output file exists but it may not be the same as the cached file and comparing paths
-            # can be tricky (directory hard links etc...) so we'll just compare hashes to determine if it needs replacement.
-            info_trace "        checking pre-existing file ${decompressed_dataset_file}..."
-            existing_file_hash=$(sha1sum "${decompressed_dataset_file}" | cut -d' ' -f1)
-
-            if [ "${existing_file_hash}" != "${downloaded_dataset_hash}" ]
-            then
-                # the existing file is corrupt - replace it
-                info_trace "        invalid hash. overriding pre-exisiting file ${decompressed_dataset_file} (${existing_file_hash}) with cached file ${downloaded_dataset_file}"
-                cp "${downloaded_dataset_file}" "${decompressed_dataset_file}"
-
-                # remove any references to the pre-existing file from the cache
-                sed -i "/${existing_file_hash}/ d" "${datasets_cache}"
-            else
-                # the existing file is valid - let it be.
-                info_trace "        valid hash."
-            fi
-
-        # if the expected output file doesn't exist copy the cached dataset file
-        else
-            info_trace "    copying cached dataset to proper location."
-            cp "${downloaded_dataset_file}" "${decompressed_dataset_file}"
-        fi
-
-        # update the cache with the correct path
-        info_trace "    updating cache."
-        sed -i "/${downloaded_dataset_hash}/ d" "${datasets_cache}"
-        echo "${dataset_url}${CACHE_FIELD_SEPARATOR}${decompressed_dataset_file}${CACHE_FIELD_SEPARATOR}${downloaded_dataset_hash}" >> ${datasets_cache}
-
-        # next dataset please
-        continue
-
-    else
-        # dataset is not listed in the cache in this case
-        info_trace "    valid dataset not present in cache - proceeding to download it."
-    fi
-
-    # make sure that we have the proper decompressor if decompression is needed
-    if echo "${dataset_url}" | grep -qiP '\.bz2$' && ! which bzip2 &>/dev/null
-    then
-        error_trace "error: can't find bzip2 decompressor - skipping ${dataset_url}"
-    fi
-
-    # download the dataset file
-    if ! curl -o "${dataset_file}" "${dataset_url}"
-    then
-        error_trace "    error: couldn't fetch ${dataset_url}"
-        rm -f "${dataset_file}"
-        continue
-    fi
-
-    # check if decompression is required
-    if echo "${dataset_file}" | grep -qiP '\.bz2$'
-    then
-        info_trace "    decompressing ${dataset_file}..."
-        bzip2 -d "${dataset_file}"
-        info_trace "        -> decompressed to ${decompressed_dataset_file}"
-    fi
-
-    # remove column indicator notation from the datasets as these seem to confuse GNU Octave.
-    info_trace "    removing column indicators from ${decompressed_dataset_file}..."
-    sed -i -r 's/[0-9]+://g' "${decompressed_dataset_file}"
-
-    # write dataset to cache file
-    info_trace "    adding ${decompressed_dataset_file} to cache file ${datasets_cache}"
-    dataset_hash=$(sha1sum "${decompressed_dataset_file}" | cut -d' ' -f1)
-    echo "${dataset_url}${CACHE_FIELD_SEPARATOR}${decompressed_dataset_file}${CACHE_FIELD_SEPARATOR}${dataset_hash}" >> ${datasets_cache}
-
 done
+
+info_trace "done!"
 
