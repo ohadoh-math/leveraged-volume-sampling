@@ -4,7 +4,8 @@ set -eu
 
 # This script performs environment setup.
 # It fetches the required data sets as configured in the datasets file
-# and places them in the .data/ directory.
+# and places them in the downloaded-datasets/ directory.
+# After that, the format is normalized for Octave usage.
 
 readonly PROJECT_BASE=$(dirname $(readlink -f "${BASH_SOURCE[0]}"))
 readonly SCRIPT=$(basename "${BASH_SOURCE[0]}")
@@ -172,7 +173,7 @@ function help()
         | * -s DATASET-FILE - use the configuration listed in DATASET-FILE (default: ${DEFAULT_DATASETS_FILE}).
         | * -c DATASETS-CACHE-FILE - use DATASETS-CACHE-FILE to store the hashes of the downloaded data sets (default: ${DEFAULT_DATASETS_CACHE}).
         | * -o OUTPUT-DIRECTORY - use OUTPUT-DIRECTORY to store the data sets (default: ${DEFAULT_DATASETS_DIR}).
-    " | sed -r 's/^\s*|?//g'
+    " | sed -r 's/^\s*\|?//g'
 }
 
 datasets_dir="${DEFAULT_DATASETS_DIR}"
