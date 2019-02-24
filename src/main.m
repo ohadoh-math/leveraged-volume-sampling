@@ -137,11 +137,31 @@ function _main
     for i=3:argc
         separated_arg = strsplit(argv{i}, ",");
         for j=1:length(separated_arg)
-            _sample_size = str2double(separated_arg{j});
-            if isnan(_sample_size)
-                error("invalid size '%s'", separated_arg{j})
+            size_arg = separated_arg{j};
+
+            if length(findstr(size_arg, ":")) > 0
+                range_args = strsplit(size_arg, ":");
+
+                if length(range_args) > 3
+                    error("invalid range argument '%s'", size_arg)
+                endif
+
+                range_start = floor(str2double(range_args{1}));
+                range_end = floor(str2double(range_args{end}));
+                if length(range_args) == 3
+                    step = floor(str2double(range_args{2}));
+                else
+                    step = 1;
+                endif
+
+                sample_sizes = [sample_sizes range_start:step:range_end];
             else
-                sample_sizes = [sample_sizes floor(_sample_size)];
+                _sample_size = str2double(size_arg);
+                if isnan(_sample_size)
+                    error("invalid size '%s'", size_arg)
+                else
+                    sample_sizes = [sample_sizes floor(_sample_size)];
+                endif
             endif
         endfor
     endfor

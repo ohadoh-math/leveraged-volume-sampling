@@ -10,8 +10,11 @@
 %   * The standard deviation of the l2 error for each of the `times` runs.
 
 function [sw, sXw, sl2error, sl2error_avg, sl2error_std] = leveraged_volume_sampling(X, y, k, times)
+    info_trace("initializing leveraged volume sampler for %ix%i matrix", rows(X), columns(X))
+
     n = rows(X);
     sampler = LeveragedVolumeSampler(X, y, k);
+    info_trace("sampler initialized")
 
     sw = zeros(columns(X), 1);
     sXw = zeros(rows(X), 1);

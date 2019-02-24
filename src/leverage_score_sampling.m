@@ -15,10 +15,13 @@ function [sw, sXw, sl2error, sl2error_avg, sl2error_std]=leverage_score_sampling
     sl2error_avg = 0;
     sl2error_std = 0;
 
+    info_trace("initializing leverage score sampler (calculating leverage scores) for %ix%i matrix", rows(X), columns(X))
     sl2errors = [];
     leverage_score_sampler = LeverageScoreDistribution(X, y);
+    info_trace("sampler initialized!")
 
     for t=1:times
+        info_trace("sampling iteration %i", t);
         % sample a subset of the rows via leverage score sampling
         [sX, sy] = leverage_score_sampler.sub_sample(k);
 
@@ -33,6 +36,7 @@ function [sw, sXw, sl2error, sl2error_avg, sl2error_std]=leverage_score_sampling
         sw += _sw;
         sl2errors(t,1) = _sl2error;
     endfor
+    info_trace("done sampling")
 
     sw = sw/times;
     sXw = X*sw;

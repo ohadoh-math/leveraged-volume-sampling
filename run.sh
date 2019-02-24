@@ -2,6 +2,8 @@
 
 set -eu
 
+export PS4='$(date +"%Y-%m-%d %H:%M:%S") $0.$LINENO+ '
+
 # This script runs the Leveraged Volume Sampling implementation on
 # downloaded datasets and generates graphs comparing it to Leverage Score Sampling
 # and regular Volume Sampling procedures.
@@ -44,13 +46,14 @@ function error_trace()
 function help()
 {
     echo "
-        usage: ${SCRIPT} [-h] [-x] [-o OUTPUT-DIRECTORY] [-c DATASETS-CACHE] [-d DATASETS-DIRECTORY] [-s DATASETS-FILE]
+        usage: ${SCRIPT} [-h] [-x] [-t] [-o OUTPUT-DIRECTORY] [-c DATASETS-CACHE] [-d DATASETS-DIRECTORY] [-s DATASETS-FILE]
 
         Runs Leverage Volume Sampling on a given set of datasets and plots it's
         performance vs regular Volume Sampling and Leverage Score Sampling.
         The datasets are fetched using ./setup.sh.
         | * -h - print this help.
         | * -x - enable bash's -x flag.
+        | * -t - set TRACE_INFO for extra debug traces.
         | * -o OUTPUT-DIRECTORY - where to write the graphs to.
         | * -c DATASETS-CACHE - the cache file to consult.
         | * -d DATASETS-DIRECTORY - the directory to download the datasets to.
@@ -130,7 +133,7 @@ function detect_octave()
 cache_file="${DEFAULT_DATASETS_CACHE}"
 graphs_directory="${DEFAULT_GRAPHS_DIRECTORY}"
 
-while getopts ":hxo:c:d:s:" option
+while getopts ":hxto:c:d:s:" option
 do
     case "${option}" in
         h)  help
@@ -139,6 +142,9 @@ do
 
         x)  set -x
             setup_x_flag="-x"
+            ;;
+
+        t)  export TRACE_INFO="1"
             ;;
 
         o)  graphs_directory="${OPTARG}"
@@ -168,7 +174,7 @@ info_trace "datasets fetched!"
 
 mkdir -p "${graphs_directory}"
 
-cat "${cache_file}" | while IFS="$(echo -ne '\t')" read url dataset_file dataset_hash sampling_count
+grep -vP '^#' "${cache_file}" | while IFS="$(echo -ne '\t')" read url dataset_file dataset_hash sampling_count
 do
     graph_file="${graphs_directory}/$(basename ${dataset_file}).png"
     info_trace "processing ${dataset_file}..."

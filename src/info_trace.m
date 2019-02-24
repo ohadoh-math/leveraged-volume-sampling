@@ -6,7 +6,8 @@ function info_trace(msg, varargin)
     persistent show_info_traces = getenv("TRACE_INFO");
 
     if show_info_traces
-        msg = sprintf("info: [%s] %s\n", strftime('%a %b %d %H:%M:%S %Y',gmtime(time())), msg);
+        func_name = dbstack()(2).name;
+        msg = sprintf("info: [%s] %s: %s\n", strftime('%a %b %d %H:%M:%S %Y',gmtime(time())), func_name, msg);
         fprintf(stderr(), msg, varargin{:});
     endif
 endfunction
