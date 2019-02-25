@@ -46,7 +46,7 @@ function error_trace()
 function help()
 {
     echo "
-        usage: ${SCRIPT} [-h] [-x] [-t] [-o OUTPUT-DIRECTORY] [-c DATASETS-CACHE] [-d DATASETS-DIRECTORY] [-s DATASETS-FILE]
+        usage: ${SCRIPT} [-h] [-x] [-t] [-f] [-n CPU-COUNT] [-o OUTPUT-DIRECTORY] [-c DATASETS-CACHE] [-d DATASETS-DIRECTORY] [-s DATASETS-FILE]
 
         Runs Leverage Volume Sampling on a given set of datasets and plots it's
         performance vs regular Volume Sampling and Leverage Score Sampling.
@@ -54,6 +54,8 @@ function help()
         | * -h - print this help.
         | * -x - enable bash's -x flag.
         | * -t - set TRACE_INFO for extra debug traces.
+        | * -f - force the use of GNU Octave installed via Flatpak.
+        | * -n - use CPU-COUNT parallel processes (default: ${cpu_count:-1}).
         | * -o OUTPUT-DIRECTORY - where to write the graphs to.
         | * -c DATASETS-CACHE - the cache file to consult.
         | * -d DATASETS-DIRECTORY - the directory to download the datasets to.
@@ -132,8 +134,9 @@ function detect_octave()
 
 cache_file="${DEFAULT_DATASETS_CACHE}"
 graphs_directory="${DEFAULT_GRAPHS_DIRECTORY}"
+cpu_count=$(grep -cP '^processor' /proc/cpuinfo)
 
-while getopts ":hxto:c:d:s:" option
+while getopts ":hxtfn:o:c:d:s:" option
 do
     case "${option}" in
         h)  help
@@ -145,6 +148,14 @@ do
             ;;
 
         t)  export TRACE_INFO="1"
+            ;;
+
+        f)  FORCE_FLATPAK="1"
+            ;;
+
+        n)  cpu_count="${OPTARG}"
+            # make sure it's a valid number
+            [ "${cpu_count}" -ge "0" ] || perror "invalid -n argument '${cpu_count}'"
             ;;
 
         o)  graphs_directory="${OPTARG}"
@@ -174,13 +185,26 @@ info_trace "datasets fetched!"
 
 mkdir -p "${graphs_directory}"
 
+used_cpus=0
 grep -vP '^#' "${cache_file}" | while IFS="$(echo -ne '\t')" read url dataset_file dataset_hash sampling_count
 do
-    graph_file="${graphs_directory}/$(basename ${dataset_file}).png"
-    info_trace "processing ${dataset_file}..."
-    run_octave -p "${SOURCE_DIR}" "${MAIN_SCRIPT}" "${dataset_file}" "${graph_file}" "${sampling_count}"
-    info_trace "    generated ${graph_file} !"
+    (
+        graph_file="${graphs_directory}/$(basename ${dataset_file}).png"
+        info_trace "processing ${dataset_file}..."
+        TRACE_PREFIX="dataset-$(basename ${dataset_file})" run_octave -p "${SOURCE_DIR}" "${MAIN_SCRIPT}" "${dataset_file}" "${graph_file}" "${sampling_count}"
+        info_trace "    generated ${graph_file} !"
+    ) &
+    let "used_cpus += 1"
+
+    if [ "${used_cpus}" -ge "${cpu_count}" ]
+    then
+        info_trace "reached parallelization limit of ${used_cpus} CPU(s), waiting for children to finish..."
+        wait -n || error_trace "a job terminated with failure!"
+        let "used_cpus -= 1"
+    fi
 done
+
+wait
 
 info_trace "done!"
 
