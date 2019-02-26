@@ -33,6 +33,7 @@
             reasonable resource constraints.
             Assume the rows of such a sub-sampled problem to be $S$, the sub-sampled matrix and labels vector to be $X_{S}$
             and $y_{S}$ respectively and the sub-sampled solution to be $w_{S}=X_{S}^+y_{S}$.
+
             We'd like an effective algorithm to choose $S$, based on the features alone, whose corresponding solution $w_{S}$
             will hold the following properties with regard to the optimal solution $w^\ast$:
             \begin{itemize}
@@ -41,13 +42,15 @@
                 \item Can be executed efficiently.
             \end{itemize}
 
+            For the rest of this summary we'll assume $X$ is in general position unless otherwise specified.
+
         \subsection{Leverage Score Sampling}
             The leverage score $l_{i}$ of row $i$ of matrix $X=(x_{i}^T)$ is given by $l_{i}=x_{i}^T(X^TX)^{-1}x_{i}$ and those
             values sum up to $d$.
             \textit{Leverage Score Sampling} suggests selecting the multiset $S$ of $k$ rows i.i.d from $X$ with probability:
 
             \begin{equation}
-            P(S\in{[n]^k})=\prod_{i=1}^{k}\frac{l_{i}}{d}
+                P(S\in{[n]^k})=\prod_{i=1}^{k}\frac{l_{i}}{d}
             \end{equation}
 
             With this procedure we are guaranteed\footnote{\label{leverage_score_performance_1}"Reverse iterative volume
@@ -57,6 +60,25 @@
             However, this multiplicative bound doesn't hold in expectation and the approximate solution $w_{S}$ is biased (a
             trait of i.i.d sampling algorithms). This means that you can't control for the error by repeating the process
             and averaging the estimators.
+
+        \subsection{Volume Sampling}
+            Volume sampling is currently the main alternative to Leverage Score Sampling.
+            It is a non-i.i.d sampling method that attempts to sample a "diverse" subset of the rows of $X$,
+            where "diversity" is in the sense of trying to maintain as much of the volume spanned by the
+            columns of $X$.
+            \textit{Volume Sampling} suggest selecting the set $S$ of $k$ distinct rows from $X$ with the following probability:
+
+            \begin{equation}
+                P(S\in{\binom{[n]}{k}})=\frac{det(X_{S}^TX_{S})}{\binom{n-d}{k-d}det(X^TX)}
+            \end{equation}
+
+            This resultant $w_{S}$ is unbiased, which in turn allows the averaging of multiple results to reduce the variance.
+            However, there is no high probability guarantee of a $(1+\epsilon)L(w^\ast)$ bound on $L(w_{S})$ for this procedure
+            (as shown in \hyperref[sec:no_mult_bound_vol]{the following section}).
+
+    \section{No Multiplicative Bound For Standard Volume Sampling}
+    \label{sec:no_mult_bound_vol}
+    Placeholder text
 
 \end{document}
 
