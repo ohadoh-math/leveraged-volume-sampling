@@ -1,0 +1,44 @@
+\documentclass{article}
+
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\begin{document}
+
+	\title{Leveraged Volume Sampling - Summary}
+	\author{Ohad Ohayon}
+	\pagenumbering{gobble}
+	\maketitle
+	\newpage
+
+	\pagenumbering{arabic}
+
+    \tableofcontents
+    \newpage
+
+    \section{Overview}
+        This document summarises the contribution of the {\color{blue}\href{https://arxiv.org/abs/1802.06749}{\underline{paper}}} \textit{"Leveraged volume sampling for linear regression."}.
+        It follows the structure of the paper itself, summarizing each of it's main sections.
+        Finally, I will demonstrate my attempt at reproducing the results in the paper.
+
+    \section{Introduction}
+        \subsection{The Problem}
+            Assume a linear regression problem where the feature vectors are the rows of an $n$ by $d$ full rank matrix $X=(x_{i}^T)$,
+            the labels are the column vector $y$ and the optimal solution is $w^\ast=X^+y$.
+            Define the average loss function of a solution $w$ to be $L(w)=frac{1}_{n}||Xw-y||_{2}^2$.
+            In many real-world scenarios acquiring labels for some linear regression problems can be an expensive operation,
+            although the regression features are readily available (as they may be just the parameters for an experiment).
+            You may be accessible to the labels but you must limit the amount you request in order to deliver results within
+            reasonable resource constraints.
+            Assume the rows of such a sub-sampled problem to be $S$, the sub-sampled matrix and labels vector to be $X_{S}$
+            and $y_{S}$ respectively and the sub-sampled solution to be $w_{S}=X_{S}^+y_{S}$.
+            We'd like an effective algorithm to choose $S$, based on the features alone, whose corresponding solution $w_{S}$
+            will hold the following properties with regard to the optimal solution $w^\ast$:
+            \begin{itemize}
+                \item $w_{S}$ is unbiased, i.e.: $E[w_{S}]=w^\ast$.
+                \item The error for $w_{S}$ can be bounded by $L(w_{S}) < (1+\epsilon)L(w^\ast)$ for an $\epsilon$ of choice.
+                \item Can be executed efficiently.
+            \end{itemize}
+
+\end{document}
+
