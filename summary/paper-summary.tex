@@ -2,6 +2,7 @@
 
 \usepackage{hyperref}
 \usepackage{xcolor}
+\usepackage{amsmath}
 
 \begin{document}
 
@@ -25,7 +26,7 @@
         \subsection{The Problem}
             Assume a linear regression problem where the feature vectors are the rows of an $n$ by $d$ full rank matrix $X=(x_{i}^T)$,
             the labels are the column vector $y$ and the optimal solution is $w^\ast=X^+y$.
-            Define the average loss function of a solution $w$ to be $L(w)=frac{1}_{n}||Xw-y||_{2}^2$.
+            Define the average loss function of a solution $w$ to be $L(w)=\frac{1}{n}||Xw-y||_{2}^2$.
             In many real-world scenarios acquiring labels for some linear regression problems can be an expensive operation,
             although the regression features are readily available (as they may be just the parameters for an experiment).
             You may be accessible to the labels but you must limit the amount you request in order to deliver results within
@@ -39,6 +40,23 @@
                 \item The error for $w_{S}$ can be bounded by $L(w_{S}) < (1+\epsilon)L(w^\ast)$ for an $\epsilon$ of choice.
                 \item Can be executed efficiently.
             \end{itemize}
+
+        \subsection{Leverage Score Sampling}
+            The leverage score $l_{i}$ of row $i$ of matrix $X=(x_{i}^T)$ is given by $l_{i}=x_{i}^T(X^TX)^{-1}x_{i}$ and those
+            values sum up to $d$.
+            \textit{Leverage Score Sampling} suggests selecting the multiset $S$ of $k$ rows i.i.d from $X$ with probability:
+
+            \begin{equation}
+            P(S\in{[n]^k})=\prod_{i=1}^{k}\frac{l_{i}}{d}
+            \end{equation}
+
+            With this procedure we are guaranteed\footnote{\label{leverage_score_performance_1}"Reverse iterative volume
+            sampling for linear regression" P.21} that it is sufficient to choose
+            $O(d\log{d}+\frac{d}{\epsilon})$ to obtain $L(w_{S}) < (1+\epsilon)L(w^\ast)$ with high probability.
+            All in all this is a pretty efficient and fast algorithm.
+            However, this multiplicative bound doesn't hold in expectation and the approximate solution $w_{S}$ is biased (a
+            trait of i.i.d sampling algorithms). This means that you can't control for the error by repeating the process
+            and averaging the estimators.
 
 \end{document}
 
