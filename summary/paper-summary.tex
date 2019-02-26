@@ -73,8 +73,13 @@
             \end{equation}
 
             This resultant $w_{S}$ is unbiased, which in turn allows the averaging of multiple results to reduce the variance.
+            This procedure can also be implemented efficiently using the \textit{"Reverse Iterative Sampling"} and \textit{"Fast Regularized
+            Volume Sampling"} {\color{blue}\href{https://arxiv.org/abs/1710.05110}{\underline{algorithms}}}\footnote{\label{reg_vol_samp}"Subsampling
+            for Ridge Regression via Regularized Volume Sampling"}.
             However, there is no high probability guarantee of a $(1+\epsilon)L(w^\ast)$ bound on $L(w_{S})$ for this procedure
             (as shown in \hyperref[sec:no_mult_bound_vol]{the following section}).
+
+        \subsection{Leveraged Volume Sampling}
 
     \section{No Multiplicative Bound For Standard Volume Sampling}
     \label{sec:no_mult_bound_vol}
