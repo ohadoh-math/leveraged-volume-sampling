@@ -136,6 +136,8 @@ cache_file="${DEFAULT_DATASETS_CACHE}"
 graphs_directory="${DEFAULT_GRAPHS_DIRECTORY}"
 cpu_count=$(grep -cP '^processor' /proc/cpuinfo)
 
+export TRACE_INFO="1"
+
 while getopts ":hxtfn:o:c:d:s:" option
 do
     case "${option}" in
@@ -147,7 +149,7 @@ do
             setup_x_flag="-x"
             ;;
 
-        t)  export TRACE_INFO="1"
+        t)  export TRACE_INFO=""
             ;;
 
         f)  FORCE_FLATPAK="1"

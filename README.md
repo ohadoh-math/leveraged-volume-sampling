@@ -26,10 +26,6 @@ If you have Octave installed then you can just simply run:
 $ ./run.sh
 ```
 
-Or for extra debug prints (no use hoping that the traces will be too informative but they give a sense of what's going on):
-```bash
-$ ./run.sh -t
-```
 [run.sh](run.sh) runs [setup.sh](setup.sh) to download the required data sets and then processes them individually
 to produce a graph which will be placed in the `graphs` directory at the root of the project.
 
