@@ -85,45 +85,67 @@
             The procedure suggests sampling $k$ lines from $X$ with repetition in the following proportion:
 
             \begin{equation}
-                P(\pi\in{[n]^k})\propto{det(\sum_{i=1}^{k}\frac{d}{l_{\pi_{i}}}x_{\pi_{i}}x_{\pi_{i}}^T)\prod_{i=1}^{k}\frac{l_{\pi_{i}}}{d}}, \text{where } l_{i}=x_{i}^T(X^TX)^{-1}x_{i}
+                P(\pi\in{[n]^k}) \propto det(\sum_{i=1}^{k}\frac{d}{l_{\pi_{i}}}x_{\pi_{i}}x_{\pi_{i}}^T)\prod_{i=1}^{k}\frac{l_{\pi_{i}}}{d}, \text{where } l_{i}=x_{i}^T(X^TX)^{-1}x_{i}
             \end{equation}
 
     \section{No Multiplicative Bound For Standard Volume Sampling}
-    \label{sec:no_mult_bound_vol}
-    First, the paper first demonstrates that for the following $n x d$ regression problem:
-    \begin{equation*}
-        X=
-            \begin{bmatrix}
-                I_{dxd} \\
-                \gamma I_{dxd} \\
-                \vdots \\
-                \gamma I_{dxd}
-            \end{bmatrix}
-        , y=
-            \begin{bmatrix}
-                1_{dxd} \\
-                0_{d} \\
-                \vdots \\
-                0_{d}
-            \end{bmatrix}
-        , \text{where } \gamma > 0
-    \end{equation*}
+        \label{sec:no_mult_bound_vol}
+        First, the paper first demonstrates that for the following $n x d$ regression problem:
+        \begin{equation*}
+            X=
+                \begin{bmatrix}
+                    I_{dxd} \\
+                    \gamma I_{dxd} \\
+                    \vdots \\
+                    \gamma I_{dxd}
+                \end{bmatrix}
+            , y=
+                \begin{bmatrix}
+                    1_{dxd} \\
+                    0_{d} \\
+                    \vdots \\
+                    0_{d}
+                \end{bmatrix}
+            , \text{where } \gamma > 0
+        \end{equation*}
 
-    The paper proves that if $S$ of size $k$ is picked via ordinary \textit{Volume Sampling} then the following holds:
-    \begin{equation}
-        \lim\limits_{\gamma \to 0} \frac{E(L(w_{S}^\ast))}{L(w^\ast)} \geq 1+\frac{n-k}{n-d}
-    \end{equation}
-    \begin{equation}
-        \exists \gamma > 0: \forall k \leq \frac{n}{2}: P(L(w_{S}^\ast) \geq (1+\frac{1}{2})L(w^\ast)) > \frac{1}{4}
-    \end{equation}
+        The paper proves that if $S$ of size $k$ is picked via ordinary \textit{Volume Sampling} then the following holds:
+        \begin{equation}
+            \lim\limits_{\gamma \to 0} \frac{E(L(w_{S}^\ast))}{L(w^\ast)} \geq 1+\frac{n-k}{n-d}
+        \end{equation}
+        \begin{equation}
+            \exists \gamma > 0: \forall k \leq \frac{n}{2}: P(L(w_{S}^\ast) \geq (1+\frac{1}{2})L(w^\ast)) > \frac{1}{4}
+        \end{equation}
 
-    This means that for \textit{Volume Sampling}:
-    \begin{itemize}
-        \item There can be no unconditional guarantee on the unbiasedness of the loss $L(w_{S}^\ast)$.
-        \item There can be no unconditional upper bound guarantee with high probability on the required $k$ which is less than $\mathcal{O}(n)$.
-    \end{itemize}
+        This means that for \textit{Volume Sampling}:
+        \begin{itemize}
+            \item There can be no unconditional guarantee on the unbiasedness of the loss $L(w_{S}^\ast)$.
+            \item There can be no unconditional upper bound guarantee with high probability on the required $k$ which is less than $\mathcal{O}(n)$.
+        \end{itemize}
 
-    \textit{Leveraged Volume Sampling} does away with these limitations.
+        \textit{Leveraged Volume Sampling} does away with these limitations.
+
+    \section{Rescaled Volume Sampling Analysis}
+        \textit{Leveraged Volume Sampling} is a specific case of \textit{Rescaled Volume Sampling}.
+        Assume:
+        \begin{equation*}
+            \forall 1 \leq i \leq n: 0 \le q_{i} \leq 1, \text{ and } \sum_{i=1}^{n}q_{i} = 1
+        \end{equation*}
+        Then $(q_{i})_{i=1}^n$ defines a distribution over the lines of $X$.
+        \textit{Rescaled Volume Sampling} suggests sampling $k$ rows with repetition from $X$ with the following proportion:
+        \begin{equation}
+            P(\pi \in [n]^k) \propto det(\sum_{i=1}^{k}\frac{1}{q_{\pi_{i}}}x_{\pi_{i}}x_{\pi_{i}}^T)\prod_{i=1}^{k}q_{\pi_{i}} = det(X^{T}Q_{\pi}X)\prod_{i=1}^{k}q_{\pi_{i}},
+            \text{ where } Q=\sum_{i=1}^{k}\frac{1}{q_{\pi_{i}}}e_{\pi_{i}}e_{\pi_{i}}^T
+        \end{equation}
+        \begin{equation}
+            w_{\pi}^\ast=(Q_{\pi}^{1/2}X)^{+}Q_{\pi}^{1/2}y
+        \end{equation}
+
+        By application of the following theorems the paper proves that $w_{\pi}^\ast$ is unbiased:
+        \begin{itemize}
+            \item The Cauchy-Binet theorem, decomposing $det(XQ_{\pi}X)$ as the sum of determinants of square sub-matrices of $X$, to calculate $\sum_{\pi \in [n]^k}det(X^{T}Q_{\pi}X)\prod_{i=1}^{k}q_{\pi_{i}}$.
+            \item $E((I_{S}X)^+) = X^+$ for ordinary volume sampling to decompose both $w_{\pi}^\ast$ and $w^\ast$.
+        \end{itemize}
 
 \end{document}
 
