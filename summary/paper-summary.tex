@@ -32,13 +32,13 @@
             You may be accessible to the labels but you must limit the amount you request in order to deliver results within
             reasonable resource constraints.
             Assume the rows of such a sub-sampled problem to be $S$, the sub-sampled matrix and labels vector to be $X_{S}$
-            and $y_{S}$ respectively and the sub-sampled solution to be $w_{S}=X_{S}^+y_{S}$.
+            and $y_{S}$ respectively and the sub-sampled solution to be $w_{S}^\ast=X_{S}^+y_{S}$.
 
-            We'd like an effective algorithm to choose $S$, based on the features alone, whose corresponding solution $w_{S}$
+            We'd like an effective algorithm to choose $S$, based on the features alone, whose corresponding solution $w_{S}^\ast$
             will hold the following properties with regard to the optimal solution $w^\ast$:
             \begin{itemize}
-                \item $w_{S}$ is unbiased, i.e.: $E[w_{S}]=w^\ast$.
-                \item The error for $w_{S}$ can be bounded by $L(w_{S}) < (1+\epsilon)L(w^\ast)$ for an $\epsilon$ of choice.
+                \item $w_{S}^\ast$ is unbiased, i.e.: $E[w_{S}^\ast]=w^\ast$.
+                \item The error for $w_{S}^\ast$ can be bounded by $L(w_{S}^\ast) < (1+\epsilon)L(w^\ast)$ for an $\epsilon$ of choice.
                 \item Can be executed efficiently.
             \end{itemize}
 
@@ -55,9 +55,9 @@
 
             With this procedure we are guaranteed\footnote{\label{leverage_score_performance_1}"Reverse iterative volume
             sampling for linear regression" P.21} that it is sufficient to choose
-            $O(d\log{d}+\frac{d}{\epsilon})$ to obtain $L(w_{S}) < (1+\epsilon)L(w^\ast)$ with high probability.
+            $\mathcal{O}(d\log{d}+\frac{d}{\epsilon})$ to obtain $L(w_{S}^\ast) < (1+\epsilon)L(w^\ast)$ with high probability.
             All in all this is a pretty efficient and fast algorithm.
-            However, this multiplicative bound doesn't hold in expectation and the approximate solution $w_{S}$ is biased (a
+            However, this multiplicative bound doesn't hold in expectation and the approximate solution $w_{S}^\ast$ is biased (a
             trait of i.i.d sampling algorithms). This means that you can't control for the error by repeating the process
             and averaging the estimators.
 
@@ -72,18 +72,58 @@
                 P(S\in{\binom{[n]}{k}})=\frac{det(X_{S}^TX_{S})}{\binom{n-d}{k-d}det(X^TX)}
             \end{equation}
 
-            This resultant $w_{S}$ is unbiased, which in turn allows the averaging of multiple results to reduce the variance.
+            This resultant $w_{S}^\ast$ is unbiased, which in turn allows the averaging of multiple results to reduce the variance.
             This procedure can also be implemented efficiently using the \textit{"Reverse Iterative Sampling"} and \textit{"Fast Regularized
             Volume Sampling"} {\color{blue}\href{https://arxiv.org/abs/1710.05110}{\underline{algorithms}}}\footnote{\label{reg_vol_samp}"Subsampling
             for Ridge Regression via Regularized Volume Sampling"}.
-            However, there is no high probability guarantee of a $(1+\epsilon)L(w^\ast)$ bound on $L(w_{S})$ for this procedure
+            However, there is no high probability guarantee of a $(1+\epsilon)L(w^\ast)$ bound on $L(w_{S}^\ast)$ for this procedure
             (as shown in \hyperref[sec:no_mult_bound_vol]{the following section}).
 
         \subsection{Leveraged Volume Sampling}
+            \textit{Leveraged Volume Sampling} is this paper's contribution and it defines an unbiased sampling procedure with high probability
+            guarantees of multiplicative bounds for a relatively small $k$.
+            The procedure suggests sampling $k$ lines from $X$ with repetition in the following proportion:
+
+            \begin{equation}
+                P(\pi\in{[n]^k})\propto{det(\sum_{i=1}^{k}\frac{d}{l_{\pi_{i}}}x_{\pi_{i}}x_{\pi_{i}}^T)\prod_{i=1}^{k}\frac{l_{\pi_{i}}}{d}}, \text{where } l_{i}=x_{i}^T(X^TX)^{-1}x_{i}
+            \end{equation}
 
     \section{No Multiplicative Bound For Standard Volume Sampling}
     \label{sec:no_mult_bound_vol}
-    Placeholder text
+    First, the paper first demonstrates that for the following $n x d$ regression problem:
+    \begin{equation*}
+        X=
+            \begin{bmatrix}
+                I_{dxd} \\
+                \gamma I_{dxd} \\
+                \vdots \\
+                \gamma I_{dxd}
+            \end{bmatrix}
+        , y=
+            \begin{bmatrix}
+                1_{dxd} \\
+                0_{d} \\
+                \vdots \\
+                0_{d}
+            \end{bmatrix}
+        , \text{where } \gamma > 0
+    \end{equation*}
+
+    The paper proves that if $S$ of size $k$ is picked via ordinary \textit{Volume Sampling} then the following holds:
+    \begin{equation}
+        \lim\limits_{\gamma \to 0} \frac{E(L(w_{S}^\ast))}{L(w^\ast)} \geq 1+\frac{n-k}{n-d}
+    \end{equation}
+    \begin{equation}
+        \exists \gamma > 0: \forall k \leq \frac{n}{2}: P(L(w_{S}^\ast) \geq (1+\frac{1}{2})L(w^\ast)) > \frac{1}{4}
+    \end{equation}
+
+    This means that for \textit{Volume Sampling}:
+    \begin{itemize}
+        \item There can be no unconditional guarantee on the unbiasedness of the loss $L(w_{S}^\ast)$.
+        \item There can be no unconditional upper bound guarantee with high probability on the required $k$ which is less than $\mathcal{O}(n)$.
+    \end{itemize}
+
+    \textit{Leveraged Volume Sampling} does away with these limitations.
 
 \end{document}
 
