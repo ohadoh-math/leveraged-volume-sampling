@@ -4,6 +4,7 @@
 \usepackage{xcolor}
 \usepackage{amsmath}
 \usepackage{mathtools}
+\usepackage{graphicx}
 
 \begin{document}
 
@@ -201,8 +202,47 @@
             \item There exists a $C$ s.t. if $k \geq Cd\log(\frac{d}{\delta})$ then $P(\lambda_{min}(\frac{1}{k}U^TQ_{\pi}U) \leq \frac{1}{8}) \leq \delta$
         \end{itemize}
 
-        The first property, when applied to $r=U^Tv^\ast - y$, allows us to bound $U^TQ_{\pi}r$ and the second allows us to bound $||(U^TQ_{\pi}U)^{-1}|| < 8$
-        with high probability.
+        The first property, when applied to $r=Uv^\ast - y$, allows us to bound $||U^TQ_{\pi}r||^2 \leq \epsilon\frac{k^2}{8^2}||r||^2$
+        and the second allows us to bound $||(U^TQ_{\pi}U)^{-1}|| < 8$, both with high probability, there by yielding the bound:
+        \begin{equation}
+            L(w_{\pi}^\ast) \leq (1+\epsilon)L(w^\ast)
+        \end{equation}
+
+    \newpage
+    \section{Numerical Results}
+        I've done my best to replicate the results in the paper.
+        The trend of diminishing error at relatively small number of rows is there but I couldn't replicate the smooth results the paper presented.
+
+        \begin{figure}[h]
+            \includegraphics[width=\linewidth]{results/abalone.png}
+            \caption{abalone dataset.}
+            \label{fig:dataset1}
+        \end{figure}
+        \begin{figure}[h]
+            \includegraphics[width=\linewidth]{results/bodyfat.png}
+            \caption{bodyfat dataset.}
+            \label{fig:dataset1}
+        \end{figure}
+        \begin{figure}[h]
+            \includegraphics[width=\linewidth]{results/cadata.png}
+            \caption{cadata dataset.}
+            \label{fig:dataset1}
+        \end{figure}
+        \begin{figure}
+            \includegraphics[width=\linewidth]{results/cpusmall.png}
+            \caption{cpusmall dataset.}
+            \label{fig:dataset1}
+        \end{figure}
+        \begin{figure}
+            \includegraphics[width=\linewidth]{results/housing.png}
+            \caption{housing dataset.}
+            \label{fig:dataset1}
+        \end{figure}
+        \begin{figure}
+            \includegraphics[width=\linewidth]{results/mg.png}
+            \caption{mg dataset.}
+            \label{fig:dataset1}
+        \end{figure}
 
 \end{document}
 
