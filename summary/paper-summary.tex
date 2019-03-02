@@ -172,5 +172,37 @@
         calculation takes at most as much as decomposing a matrix via SVD which is $\mathcal{O}(sd^2)$.
         Finally, note that $s=\mathcal{O}(k+d^2)$.
 
+    \section{Tail Bounds For Leveraged Volume Sampling}
+        To analyze tail bounds the paper shifts to assesing the problem where instead of $X=(x_{i}^T)_{i=1}^{n}$ you have an orthogonal $U=(u_{i}^T)_{i=1}^{n}, U^TU=I$ that spans the range.
+        This maintains correctness due to the following properties:
+        \begin{itemize}
+            \item The leverage scores are equal: $\forall i: x_{i}^T(X^TX)^{-1}x_{i}=u_{i}^T(U^TU)^{-1}u_{i}$
+            \item The \textit{Volume Sampling} volumes are proportional: $\forall S: det(X_{S}^TX_{S}) \propto det(U_{S}^TU_{S})$
+            \item The \textit{Leveraged Volume Sampling} volumes are proportional: $\forall \pi: det(X^TQ_{\pi}X) \propto det(U^TQ_{\pi}U)$
+        \end{itemize}
+
+        The following notation changes hold:
+        \begin{itemize}
+            \item $v^\ast=argmin||Uv - y||$
+            \item $v_{\pi}^\ast=argmin||U_{\pi}v - y_{\pi}||$
+            \item $L(v) = ||Uv - y||, L(v^\ast) = L(w^\ast), L(v_{\pi}^\ast) = L(w_{\pi}^\ast)$
+            \item $r \coloneqq Uv^\ast - y, U^Tr = 0$
+        \end{itemize}
+
+        Obtaining a multiplicative bound on $L(v_{\pi}^\ast)$ is done by reducing the problem to:
+        \begin{equation}
+            ||v_{\pi}^\ast - v^\ast|| \leq ||(U^TQ_{\pi}U)^{-1}||||U^TQ_{\pi}r||
+        \end{equation}
+        And bounding these two factors.
+        By the following two traits we can get a multiplicative bound of $L(w_{\pi}^\ast) < (1+\epsilon)L(w^\ast)$,
+        with high probability, when $k=\Omega(d\log \frac{d}{\delta} + \frac{d}{\epsilon\delta})$:
+        \begin{itemize}
+            \item if $k \geq \frac{2d}{\epsilon}$ then $E(||\frac{1}{k}U^TQ_{\pi}r - U^Tr||^2) \leq \epsilon||r||^2$
+            \item There exists a $C$ s.t. if $k \geq Cd\log(\frac{d}{\delta})$ then $P(\lambda_{min}(\frac{1}{k}U^TQ_{\pi}U) \leq \frac{1}{8}) \leq \delta$
+        \end{itemize}
+
+        The first property, when applied to $r=U^Tv^\ast - y$, allows us to bound $U^TQ_{\pi}r$ and the second allows us to bound $||(U^TQ_{\pi}U)^{-1}|| < 8$
+        with high probability.
+
 \end{document}
 
