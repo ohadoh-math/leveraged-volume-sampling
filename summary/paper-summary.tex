@@ -208,6 +208,16 @@
         \end{equation}
         And proceeds to bound $||E((\frac{1}{k}Q_{\pi}-I)UU^T(\frac{1}{k}Q_{\pi}-I))||$ via a clever application of a Hadamard Product inequality.
 
+        The proof of the second property is more complex but at it's core it builds on a lemma (proved in the paper) that states that if
+        you sub-sample a set $T$ fixed number of rows uniformly without replacement from $m$ rows sampled via \textit{Leveraged Volume Sampling}
+        then you can bound the following:
+        \begin{equation}
+            P(\lambda_{min}(\frac{1}{|T|}U^TQ_{\pi_{T}}U) \leq \frac{1}{4}) \leq \delta
+        \end{equation}
+        Then, they procede to generate such a uniform set $T$ and a standard volume-sampled $S$ of size $k$ out of $[m]$ where $T \subseteq S$.
+        With high probability $|S \setminus T|=\mathcal{O}(d\log(d/\delta))$ and this in turn allows us to generate the bound in the second property.
+        To prove this property the paper makes use of three lemmas where they use Tchernoff bounds on matrices as an important tool.
+
         The first property, when applied to $r=Uv^\ast - y$, allows us to bound $||U^TQ_{\pi}r||^2 \leq \epsilon\frac{k^2}{8^2}||r||^2$
         and the second allows us to bound $||(U^TQ_{\pi}U)^{-1}|| < 8$, both with high probability, there by yielding the bound:
         \begin{equation}
