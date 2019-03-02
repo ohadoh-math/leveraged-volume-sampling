@@ -202,6 +202,12 @@
             \item There exists a $C$ s.t. if $k \geq Cd\log(\frac{d}{\delta})$ then $P(\lambda_{min}(\frac{1}{k}U^TQ_{\pi}U) \leq \frac{1}{8}) \leq \delta$
         \end{itemize}
 
+        To prove the first property, the paper demonstrates:
+        \begin{equation}
+            E(||\frac{1}{k}U^TQ_{\pi}r - U^Tr||^2) = r^TE((\frac{1}{k}Q_{\pi}-I)UU^T(\frac{1}{k}Q_{\pi}-I))r \leq ||E((\frac{1}{k}Q_{\pi}-I)UU^T(\frac{1}{k}Q_{\pi}-I))||||r||^2
+        \end{equation}
+        And proceeds to bound $||E((\frac{1}{k}Q_{\pi}-I)UU^T(\frac{1}{k}Q_{\pi}-I))||$ via a clever application of a Hadamard Product inequality.
+
         The first property, when applied to $r=Uv^\ast - y$, allows us to bound $||U^TQ_{\pi}r||^2 \leq \epsilon\frac{k^2}{8^2}||r||^2$
         and the second allows us to bound $||(U^TQ_{\pi}U)^{-1}|| < 8$, both with high probability, there by yielding the bound:
         \begin{equation}
