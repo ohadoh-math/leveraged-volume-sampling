@@ -3,6 +3,7 @@
 \usepackage{hyperref}
 \usepackage{xcolor}
 \usepackage{amsmath}
+\usepackage{mathtools}
 
 \begin{document}
 
@@ -146,6 +147,25 @@
             \item The Cauchy-Binet theorem, decomposing $det(XQ_{\pi}X)$ as the sum of determinants of square sub-matrices of $X$, to calculate $\sum_{\pi \in [n]^k}det(X^{T}Q_{\pi}X)\prod_{i=1}^{k}q_{\pi_{i}}$.
             \item $E((I_{S}X)^+) = X^+$ for ordinary volume sampling to decompose both $w_{\pi}^\ast$ and $w^\ast$.
         \end{itemize}
+
+        Furthermore, using a bit of algebra, the paper shows that for \textit{Rescaled Volume Sampling}:
+        \begin{equation}
+            E(Q_{\pi}) = (k-d)I + diag(\frac{l_{1}}{q_{1}}, \hdots, \frac{l_{n}}{q_{n}})
+        \end{equation}
+
+    \section{Leveraged Volume Sampling}
+        \textit{Leveraged Volume Sampling} is \textit{Rescaled Volume Sampling} where $q_{i}=\frac{l_{i}}{d}$ (note that $\sum_{i=1}^{n}l_{i}=d$).
+        This procedure is unbiased (as it is a case of \textit{Rescaled Volume Sampling}) and is subject to favorable tail bounds (more on that in the next section).
+        You can poll such a subset with an algorithm named \textit{Determinantal Rejection Sampling} which selects $k$ lines from $X$ that boils down to the following steps:
+        \begin{itemize}
+            \item Set $s \coloneqq max(k, 4d^{2})$.
+            \item Repeat until acceptance selection of lines $\pi$ of size $s$ i.i.d from $1..n$ and accept with probability $\frac{det(\frac{1}{s}X^{T}Q_{\pi}X)}{det(X^{T}X)}$.
+            \item Use \textit{Volume Sampling} to reduce the selected $s$ rows to $k$ rows.
+        \end{itemize}
+
+        The proof that this procedure indeed yields a \textit{Leveraged Volume Sampling} distributed set is largely due to the fact that when you
+        select a \textit{Leveraged Volume Sampling} distributed set of size $s$ and then apply \textit{Reverse Iterative Volume Sampling} to sub-select
+        a $k$ sized subset then the \textit{Leveraged Volume Sampling} distribution is recursively maintained at each step.
 
 \end{document}
 
