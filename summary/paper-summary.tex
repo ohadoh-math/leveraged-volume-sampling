@@ -167,5 +167,10 @@
         select a \textit{Leveraged Volume Sampling} distributed set of size $s$ and then apply \textit{Reverse Iterative Volume Sampling} to sub-select
         a $k$ sized subset then the \textit{Leveraged Volume Sampling} distribution is recursively maintained at each step.
 
+        This algorithm runs, with probability at least $1-\delta$, in time $\mathcal{O}((d^2+k^2)d^2ln(\frac{1}{\delta}))$.
+        This can be seen by bounding from below the acceptance probability in the repetition with $\frac{3}{4}$ and noting that determinant
+        calculation takes at most as much as decomposing a matrix via SVD which is $\mathcal{O}(sd^2)$.
+        Finally, note that $s=\mathcal{O}(k+d^2)$.
+
 \end{document}
 
