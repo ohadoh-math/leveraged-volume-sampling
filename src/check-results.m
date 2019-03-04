@@ -51,7 +51,7 @@ function _main
     % now process the solutions
     process_solutions(X, y, lss_solutions, "LSS");
     process_solutions(X, y, vss_solutions, "VSS");
-    process_solutions(X, y, vlss_solutions, "VLSS");
+    process_solutions(X, y, lvss_solutions, "LVSS");
 
 endfunction
 
