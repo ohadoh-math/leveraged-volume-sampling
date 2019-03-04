@@ -40,21 +40,24 @@ function [optimal_l2error, regression_time, ...
     lss_sl2errors = [];
     lss_sl2errors_avg = [];
     lss_sl2errors_std = [];
+    lss_solutions = [];
 
     vss_sl2errors = [];
     vss_sl2errors_avg = [];
     vss_sl2errors_std = [];
+    vss_solutions = [];
 
     lvss_sl2errors = [];
     lvss_sl2errors_avg = [];
     lvss_sl2errors_std = [];
+    lvss_solutions = [];
 
     optimal_error = optimal_l2error * ones(size(sample_sizes));
 
     info_trace ("proceeding to sample via LSS, VSS and LVSS for %i tries each", sampling_count)
     for sample_sz = sample_sizes
         info_trace("\t%s: LSS(k=%i, times=%i, n=%i, d=%i)", dataset_name, sample_sz, sampling_count, rows(X), columns(X))
-        [sw, sXw, sl2error, sl2error_avg, sl2error_std] = leverage_score_sampling(X, y, sample_sz, sampling_count);
+        [sw, sXw, sl2error, sl2error_avg, sl2error_std, solutions] = leverage_score_sampling(X, y, sample_sz, sampling_count);
 
         info_trace("%s: LSS(k=%i, times=%i, n=%i, d=%i): sl2error=%f, ol2error=%f, sl2error_avg=%f[%f]\n",
                    dataset_name, sample_sz, sampling_count, rows(X), columns(X),
@@ -62,24 +65,30 @@ function [optimal_l2error, regression_time, ...
         lss_sl2errors = [lss_sl2errors sl2error];
         lss_sl2errors_avg = [lss_sl2errors_avg sl2error_avg];
         lss_sl2errors_std = [lss_sl2errors_std sl2error_std];
+        solutions = [sample_sz*ones(1, columns(solutions)); solutions];
+        lss_solutions = [lss_solutions solutions];
 
         info_trace("\t%s: VSS(s=%i, times=%i, n=%i, d=%i)", dataset_name, sample_sz, sampling_count, rows(X), columns(X));
-        [sw, sXw, sl2error, sl2error_avg, sl2error_std] = volume_sampling(X, y, sample_sz, sampling_count);
+        [sw, sXw, sl2error, sl2error_avg, sl2error_std, solutions] = volume_sampling(X, y, sample_sz, sampling_count);
         info_trace("%s: VSS(s=%i, times=%i, n=%i, d=%i): sl2error=%f, ol2error=%f, sl2error_avg=%f[%f]\n",
                    dataset_name, sample_sz, sampling_count, rows(X), columns(X),
                    sl2error, optimal_l2error, sl2error_avg, sl2error_std);
         vss_sl2errors = [vss_sl2errors sl2error];
         vss_sl2errors_avg = [vss_sl2errors_avg sl2error_avg];
         vss_sl2errors_std = [vss_sl2errors_std sl2error_std];
+        solutions = [sample_sz*ones(1, columns(solutions)); solutions];
+        vss_solutions = [vss_solutions solutions];
 
         info_trace("\t%s: LVSS(k=%i, times=%i, n=%i, d=%i)", dataset_name, sample_sz, sampling_count, rows(X), columns(X));
-        [sw, sXw, sl2error, sl2error_avg, sl2error_std] = leveraged_volume_sampling(X, y, sample_sz, sampling_count);
+        [sw, sXw, sl2error, sl2error_avg, sl2error_std, solutions] = leveraged_volume_sampling(X, y, sample_sz, sampling_count);
         info_trace("%s: LVSS(s=%i, times=%i, n=%i, d=%i): sl2error=%f, ol2error=%f, sl2error_avg=%f[%f]\n",
                    dataset_name, sample_sz, sampling_count, rows(X), columns(X),
                    sl2error, optimal_l2error, sl2error_avg, sl2error_std);
         lvss_sl2errors = [lvss_sl2errors sl2error];
         lvss_sl2errors_avg = [lvss_sl2errors_avg sl2error_avg];
         lvss_sl2errors_std = [lvss_sl2errors_std sl2error_std];
+        solutions = [sample_sz*ones(1, columns(solutions)); solutions];
+        lvss_solutions = [lvss_solutions solutions];
     end
 
     info_trace("finished regressions - plotting results to %s", output_file);
@@ -99,7 +108,7 @@ function [optimal_l2error, regression_time, ...
 
     print(graph_handle, output_file, "-dpng");
 
-    save(strcat(output_file, ".octave"), "sample_sizes", "lss_sl2errors", "vss_sl2errors", "lvss_sl2errors", "optimal_error");
+    save(strcat(output_file, ".octave"), "sample_sizes", "lss_sl2errors", "vss_sl2errors", "lvss_sl2errors", "optimal_error", "lss_solutions", "vss_solutions", "lvss_solutions");
 
     info_trace("done plotting!");
 

@@ -8,7 +8,7 @@
 %   * The average l2 error for each of the `times` runs.
 %   * The standard deviation of the l2 error for each of the `times` runs.
 
-function [sw, sXw, sl2error, sl2error_avg, sl2error_std] = volume_sampling(X, y, k, times)
+function [sw, sXw, sl2error, sl2error_avg, sl2error_std, solutions] = volume_sampling(X, y, k, times)
     info_trace("initializing volume sampler for %ix%i matrix", rows(X), columns(X))
 
     n = rows(X);
@@ -22,6 +22,7 @@ function [sw, sXw, sl2error, sl2error_avg, sl2error_std] = volume_sampling(X, y,
     sl2error_std = 0;
     total_time = 0;
     sl2errors = [];
+    solutions = [];
 
     for t = 1:times
         info_trace("VSS iteration #%i", t);
@@ -39,6 +40,7 @@ function [sw, sXw, sl2error, sl2error_avg, sl2error_std] = volume_sampling(X, y,
 
         info_trace("\tregressing...");
         _sw = linear_regression(sX, sy);
+        solutions = [solutions _sw];
 
         sw += _sw;
 

@@ -7,7 +7,7 @@
 %   * The averaged least-squares error (|sXw - y|^2).
 %   * The standard deviation of the least-squares error (|sXw - y|^2).
 
-function [sw, sXw, sl2error, sl2error_avg, sl2error_std]=leverage_score_sampling(X, y, k, times=1)
+function [sw, sXw, sl2error, sl2error_avg, sl2error_std, solutions]=leverage_score_sampling(X, y, k, times=1)
     n = rows(X);
     sw = zeros(columns(X), 1);
     sXw = zeros(rows(X), 1);
@@ -20,6 +20,8 @@ function [sw, sXw, sl2error, sl2error_avg, sl2error_std]=leverage_score_sampling
     leverage_score_sampler = LeverageScoreDistribution(X, y);
     info_trace("sampler initialized!")
 
+    solutions = [];
+
     for t=1:times
         info_trace("sampling iteration %i", t);
         % sample a subset of the rows via leverage score sampling
@@ -27,6 +29,7 @@ function [sw, sXw, sl2error, sl2error_avg, sl2error_std]=leverage_score_sampling
 
         % regress
         [_sw, _sXw, _sl2error, regression_time] = linear_regression(sX, sy);
+        solutions = [solutions _sw];
 
         % calculate the actual estimation (_sXw and _sl2error are irrelevant as they represent a sub-sampled problem)
         _sXw = X*_sw;

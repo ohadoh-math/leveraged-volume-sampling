@@ -10,4 +10,5 @@ datasets-cache
 downloaded-datasets/
 sed*
 graphs/
+graphs-*/
 paper-summary.pdf
