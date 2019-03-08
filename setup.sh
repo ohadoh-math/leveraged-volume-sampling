@@ -10,6 +10,9 @@ set -eu
 readonly PROJECT_BASE=$(dirname $(readlink -f "${BASH_SOURCE[0]}"))
 readonly SCRIPT=$(basename "${BASH_SOURCE[0]}")
 
+readonly SOURCE_DIR="${PROJECT_BASE}/src"
+readonly SQUARE_FEATURES_SCRIPT="${SOURCE_DIR}/square-features.m"
+
 readonly DEFAULT_DATASETS_FILE="${PROJECT_BASE}/datasets-config"
 readonly DEFAULT_DATASETS_DIR="${PROJECT_BASE}/downloaded-datasets/"
 readonly DEFAULT_DATASETS_CACHE="${PROJECT_BASE}/datasets-cache"
@@ -127,6 +130,47 @@ function update_cached_file()
     write_cache_line "${_cache_file}" "${_dataset_url}" "${_output_file}" "${_cached_hash}" "${_sampling_count}"
 }
 
+# octave detection functions
+use_flatpak_octave=""
+function run_octave()
+{
+    if [ -z "${use_flatpak_octave}" ]
+    then
+        perror "Octave version was not detected"
+    elif [ "${use_flatpak_octave}" == "1" ]
+    then
+        flatpak run                         \
+            --branch=stable                 \
+            --arch=x86_64                   \
+            --command=/app/bin/octave-cli   \
+            --filesystem=host               \
+            org.octave.Octave "${@}"
+    else
+        octave-cli "${@}"
+    fi
+}
+
+function detect_octave()
+{
+    # check the path for octave
+    if [ -z "${FORCE_FLATPAK:-}" ] && which "octave-cli" &> /dev/null
+    then
+        use_flatpak_octave="0"
+        return 0;
+    fi
+
+    # the path doesn't hold a good enough octave.
+    # check flatpak.
+    if which flatpak &>/dev/null && flatpak list | grep -qiw Octave
+    then
+        use_flatpak_octave="1"
+        return 0;
+    fi
+
+    use_flatpak_octave=""
+    return 1
+}
+
 # download a dataset file
 function fetch_dataset()
 {
@@ -134,6 +178,7 @@ function fetch_dataset()
     local _dataset_url="${2}"
     local _output_directory="${3}"
     local _sampling_count="${4}"
+    local _square_features="${5}"
 
     local _output_file="${_output_directory}/"$(basename "${_dataset_url}" | awk -F/ '{print $NF}')
     _output_file=$(readlink -f "${_output_file}")
@@ -154,6 +199,13 @@ function fetch_dataset()
 
     # now remove the 'column:' notation in the dataset
     sed -i -r 's/[0-9]+://g' "${_output_file}"
+
+    # check if the configuration says we need to add square features columns
+    if [ "true" == "${_square_features}" ]
+    then
+        info_trace "squaring features for ${_output_file}"
+        run_octave -p "${SOURCE_DIR}" "${SQUARE_FEATURES_SCRIPT}" "${_output_file}"
+    fi
 
     # and add the file to the cache
     _hash=$(sha1sum "${_output_file}" | cut -d' ' -f1)
@@ -179,6 +231,9 @@ function help()
 datasets_dir="${DEFAULT_DATASETS_DIR}"
 datasets_list="${DEFAULT_DATASETS_FILE}"
 datasets_cache="${DEFAULT_DATASETS_CACHE}"
+
+# first, detect GNU Octave
+detect_octave || perror "couldn't detect Octave. try using ./install-flatpak-octave.sh"
 
 while getopts ":hxs:c:o:" option
 do
@@ -209,7 +264,7 @@ mkdir -p "${datasets_dir}"
 touch "${datasets_cache}"
 
 # download the datasets
-print_dataset_config "${datasets_list}" | while read dataset_url sampling_count
+print_dataset_config "${datasets_list}" | while read dataset_url square_features sampling_count
 do
     info_trace "checking dataset: ${dataset_url}..."
     if is_dataset_cached "${datasets_cache}" "${dataset_url}"
@@ -218,7 +273,7 @@ do
         update_cached_file "${datasets_cache}" "${dataset_url}" "${datasets_dir}"
     else
         info_trace "    downloading the dataset..."
-        fetch_dataset "${datasets_cache}" "${dataset_url}" "${datasets_dir}" "${sampling_count}"
+        fetch_dataset "${datasets_cache}" "${dataset_url}" "${datasets_dir}" "${sampling_count}" "${square_features}"
         info_trace "    downloaded ${dataset_url}"
     fi
 done
