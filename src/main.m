@@ -25,6 +25,12 @@ function [optimal_l2error, regression_time, ...
     y = dataset(:, 1);
     X = dataset(:, 2:end);
 
+    % normalize X and y
+    info_trace("normalizing dataset...");
+    [X, y] = normalize_dataset(X, y);
+
+    info_trace("dataset normalized");
+
     % discard the reference to the loaded data as it can be huge and I have
     % no idea how Octave manages it's memory.
     dataset = NaN;
