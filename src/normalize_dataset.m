@@ -14,7 +14,7 @@
 % Note that we drop any eigenvalues that are diminished to 0 (which means either
 % they were 0 or there was some floating point error.
 
-function [nX, ny] = normalize_dataset(X, y)
+function [nX, ny, scaling_factor] = normalize_dataset(X, y)
     d = columns(X);
     Z = X'*X;
 
@@ -27,5 +27,6 @@ function [nX, ny] = normalize_dataset(X, y)
 
     nX = X/factor;
     ny = y/factor;
+    scaling_factor = factor;
 endfunction
 

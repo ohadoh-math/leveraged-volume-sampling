@@ -27,7 +27,7 @@ function [optimal_l2error, regression_time, ...
 
     % normalize X and y
     info_trace("normalizing dataset...");
-    [X, y] = normalize_dataset(X, y);
+    [X, y, scaling_factor] = normalize_dataset(X, y);
 
     info_trace("dataset normalized");
 
@@ -97,6 +97,21 @@ function [optimal_l2error, regression_time, ...
         vss_solutions = [vss_solutions solutions];
     end
 
+    % now rescale everything with the scaling factor
+    optimal_error *= scaling_factor^2;
+
+    lvss_sl2errors *= scaling_factor^2;
+    lvss_sl2errors_avg *= scaling_factor^2;
+    lvss_sl2errors_std *= scaling_factor^2;
+
+    vss_sl2errors *= scaling_factor^2;
+    vss_sl2errors_avg *= scaling_factor^2;
+    vss_sl2errors_std *= scaling_factor^2;
+
+    lss_sl2errors *= scaling_factor^2;
+    lss_sl2errors_avg *= scaling_factor^2;
+    lss_sl2errors_std *= scaling_factor^2;
+
     info_trace("finished regressions - plotting results to %s", output_file);
 
     graph_handle = figure();
@@ -114,7 +129,7 @@ function [optimal_l2error, regression_time, ...
 
     print(graph_handle, output_file, "-dpng");
 
-    save(strcat(output_file, ".octave"), "sample_sizes", "lss_sl2errors", "vss_sl2errors", "lvss_sl2errors", "optimal_error", "lss_solutions", "vss_solutions", "lvss_solutions");
+    save(strcat(output_file, ".octave"), "scaling_factor", "sample_sizes", "lss_sl2errors", "vss_sl2errors", "lvss_sl2errors", "optimal_error", "lss_solutions", "vss_solutions", "lvss_solutions");
 
     info_trace("done plotting!");
 
