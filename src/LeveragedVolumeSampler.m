@@ -44,6 +44,10 @@ classdef LeveragedVolumeSampler < handle
             self._s = max(k, 4*(d^2));
             self._total_volume = det(X'*X);
 
+            if isnan(self._total_volume) || isinf(self._total_volume)
+                error("total volume is infinite!")
+            endif
+
             self._leverage_scores_distribution = LeverageScoreDistribution(X, y);
 
             if self._s >= self._n
@@ -62,7 +66,14 @@ classdef LeveragedVolumeSampler < handle
 
                 Q = diag(1./sqrt(scores));
                 _sX = Q*self._X(polled_rows, :);
-            until rand() < det((_sX'*_sX)/self._s)/self._total_volume
+
+                acceptance_probability = det((_sX'*_sX)/self._s)/self._total_volume;
+
+                if isnan(acceptance_probability) || isinf(acceptance_probability) || acceptance_probability < -0.0001
+                    info_trace("invalid acceptance probability: %g", acceptance_probability);
+                    error("invalid acceptance probability");
+                endif
+            until rand() < acceptance_probability
 
             % now do regular volume sampling on the polled rows
             if self._k < self._s
